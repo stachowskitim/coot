@@ -459,7 +459,7 @@ fetch_map_from_emdb_action(G_GNUC_UNUSED GSimpleAction *simple_action,
 
    GtkWidget *frame = widget_from_builder("emdb_map_code_frame");
    gtk_widget_set_visible(frame, TRUE);
-   
+
 }
 
 
@@ -1154,7 +1154,7 @@ mask_map_by_atom_selection_action(G_GNUC_UNUSED GSimpleAction *simple_action,
    GtkWidget *dialog = widget_from_builder("mask_map_by_atom_selection_dialog");
    GtkWidget *model_combobox = widget_from_builder("mask_map_by_atom_selection_model_combobox");
    GtkWidget *map_combobox   = widget_from_builder("mask_map_by_atom_selection_map_combobox");
-   
+
    int imol_mol_active = -1;
    int imol_map_active = -1;
    GCallback func = G_CALLBACK(nullptr); // we don't care until this dialog is read
@@ -1459,7 +1459,7 @@ void add_views_module_action(G_GNUC_UNUSED GSimpleAction *simple_action,
    gtk_box_append(GTK_BOX(outer_box), views_hbox);
 
    gtk_box_append(GTK_BOX(toolbar_hbox), view_menubutton);
- 
+
 }
 
 
@@ -1644,7 +1644,7 @@ background_black_action(G_GNUC_UNUSED GSimpleAction *simple_action,
 
    graphics_info_t::background_colour = glm::vec3(0,0,0);
    graphics_info_t::graphics_draw();
-   
+
 }
 
 void
@@ -1926,7 +1926,7 @@ void replace_residue_action(G_GNUC_UNUSED GSimpleAction *simple_action,
 void rigid_body_fit_residue_ranges_action(G_GNUC_UNUSED GSimpleAction *simple_action,
                                           G_GNUC_UNUSED GVariant *parameter,
                                           G_GNUC_UNUSED gpointer user_data) {
-   
+
    safe_python_command("import coot_gui");
    safe_python_command("coot_gui.rigid_body_refine_residue_ranges_gui()");
 
@@ -2430,7 +2430,7 @@ void highly_coordinates_waters_action(G_GNUC_UNUSED GSimpleAction *simple_action
                                           G_GNUC_UNUSED GVariant *parameter,
                                           G_GNUC_UNUSED gpointer user_data) {
 
-   
+
    graphics_info_t g;
    short int lang = coot::STATE_PYTHON;
    std::string module = "coot_gui";
@@ -2456,7 +2456,7 @@ void overlaps_peptides_cbeta_ramas_and_rotas_action(G_GNUC_UNUSED GSimpleAction 
       int imol = pp.second.first;
       overlaps_peptides_cbeta_ramas_and_rotas_internal(imol);
    }
-   
+
    // graphics_info_t g;
    // std::pair<bool, std::pair<int, coot::atom_spec_t> > pp = g.active_atom_spec_simple();
    // if (pp.first) {
@@ -2589,6 +2589,10 @@ residues_vec_to_labelled_buttons_vec(const std::vector<mmdb::Residue *> &rv) {
          std::string label = residue_p->GetChainID();
          label += " ";
          label += std::to_string(residue_p->GetSeqNum());
+         // Tim added this below
+         label += " ";
+         label +=std::to_string(residue_p->GetSeqNum());
+         // Tim added this above
          if (residue_p->GetInsCode()) {
             label += " ";
             label += residue_p->GetInsCode();
@@ -2986,7 +2990,7 @@ void
 fix_atom(GSimpleAction *simple_action,
          GVariant *parameter,
          gpointer user_data) {
-   
+
    graphics_info_t g;
    std::pair<bool, std::pair<int, coot::atom_spec_t> > pp = g.active_atom_spec_simple();
    if (pp.first) {
@@ -3027,7 +3031,7 @@ unfix_all_atoms(GSimpleAction *simple_action,
    }
 }
 
-#include "rotate-translate-modes.hh" // move up                
+#include "rotate-translate-modes.hh" // move up
 
 void
 rotate_translate_atom(GSimpleAction *simple_action,
