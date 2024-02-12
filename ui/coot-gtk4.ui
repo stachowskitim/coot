@@ -8268,6 +8268,7 @@ Do you want to continue?
                 <signal name="clicked" handler="on_model_toolbar_add_terminal_residue_button_clicked"/>
               </object>
             </child>
+            <!-- Tim added this -->
             <child>
 <<<<<<< HEAD:ui/coot-gtk4.ui
 <<<<<<< HEAD:ui/coot-gtk4.ui
@@ -8306,6 +8307,7 @@ Do you want to continue?
 >>>>>>> c97a4e429 (test alt gui3):coot-gtk4.ui
               </object>
             </child>
+            <!-- Tim added this ^ -->
             <child>
               <object class="GtkMenuButton" id="delete_menubutton">
                 <child>
