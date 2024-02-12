@@ -573,8 +573,6 @@ void setup_alt_conf_with_dialog(GtkWidget *dialog) {
    graphics_info_t::pick_cursor_maybe();
    graphics_info_t::pick_pending_flag = 1;
    graphics_info_t::add_alt_conf_dialog = dialog;
-
-   return add_alt_conf_dialog;
 }
 
 

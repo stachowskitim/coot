@@ -97,7 +97,7 @@ on_model_toolbar_range_define_togglebutton_toggled(GtkToggleButton *togglebutton
       if (g.in_range_define == 2) g.in_range_define = 0;
    }
    std::cout << "here now with active " << active << " in_range_define " << g.in_range_define << std::endl;
-   
+
 }
 
 
@@ -330,7 +330,15 @@ on_model_toolbar_add_alt_conf_button_clicked(GtkButton *button,
    }
 }
 
+extern "C" G_MODULE_EXPORT
+void
+on_add_alt_conf_dialog_destroy         (GtkObject       *object,
+                                        gpointer         user_data)
+{
 
+  unset_add_alt_conf_define();
+  unset_add_alt_conf_dialog();
+}
 
 
 extern "C" G_MODULE_EXPORT
@@ -441,7 +449,7 @@ on_map_name_filechooser_dialog_response(GtkDialog       *dialog,
    }
 
    gtk_widget_set_visible(GTK_WIDGET(dialog), FALSE);
-   
+
 }
 
 
@@ -587,7 +595,7 @@ on_add_an_atom_iodine_button_clicked(G_GNUC_UNUSED GtkButton       *button,
    gtk_widget_set_visible(box, FALSE);
 }
 
- 
+
 extern "C" G_MODULE_EXPORT
 void
 on_get_monomer_ok_button_clicked(GtkButton       *button,
@@ -646,7 +654,7 @@ void
 on_diff_map_peaks_update_button_clicked(GtkButton *button,
                                        gpointer         user_data) {
    graphics_info_t g;
-   g.fill_difference_map_peaks_button_box(); 
+   g.fill_difference_map_peaks_button_box();
 
 }
 
