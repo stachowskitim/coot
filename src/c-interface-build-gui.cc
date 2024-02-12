@@ -379,7 +379,7 @@ GtkWidget *wrapped_create_renumber_residue_range_dialog() {
       GCallback null_func(NULL); // we don't do anything when the Chain ID changes. The chain-id combox is only interesting on *read*.
       // NULL is tested for in fill_combobox_with_chain_options().
       g.fill_combobox_with_chain_options(chain_id_combobox, imol, null_func);
-   
+
       // by default, now the N-term button is off for the first choice
       // (and C-term is on for the second)
       GtkWidget *entry_1 = widget_from_builder("renumber_residue_range_resno_1_entry");
@@ -573,6 +573,8 @@ void setup_alt_conf_with_dialog(GtkWidget *dialog) {
    graphics_info_t::pick_cursor_maybe();
    graphics_info_t::pick_pending_flag = 1;
    graphics_info_t::add_alt_conf_dialog = dialog;
+
+   return add_alt_conf_dialog;
 }
 
 
