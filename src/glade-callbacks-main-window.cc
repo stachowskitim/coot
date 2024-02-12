@@ -330,16 +330,6 @@ on_model_toolbar_add_alt_conf_button_clicked(GtkButton *button,
    }
 }
 
-extern "C" G_MODULE_EXPORT
-void
-on_add_alt_conf_dialog_destroy         (GtkObject       *object,
-                                        gpointer         user_data)
-{
-
-  unset_add_alt_conf_define();
-  unset_add_alt_conf_dialog();
-}
-
 
 extern "C" G_MODULE_EXPORT
 void
