@@ -2591,7 +2591,7 @@ residues_vec_to_labelled_buttons_vec(const std::vector<mmdb::Residue *> &rv) {
          label += std::to_string(residue_p->GetSeqNum());
          // Tim added this below
          label += " ";
-         label += std::to_string(residue_p->GetResName());
+         label += residue_p->GetResName();
          // Tim added this above
          if (residue_p->GetInsCode()) {
             label += " ";
