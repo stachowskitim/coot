@@ -124,7 +124,7 @@
       <section>
         <item>
           <attribute name="label">Add Header Link...</attribute>
-          <attribute name="action">app.make_link_action</attribute> 
+          <attribute name="action">app.make_link_action</attribute>
         </item>
         <item>
           <attribute name="label">Change Chain IDs...</attribute>
@@ -536,7 +536,7 @@
           <!--   <attribute name="label">Background Colour...</attribute> -->
           <!--   <attribute name="action">app.background_colour_action</attribute> -->
           <!-- </item> -->
- 
+
           <submenu>
             <attribute name="label">Background Colour...</attribute>
             <item>
@@ -560,7 +560,7 @@
               <attribute name="action">app.background_white_action</attribute>
             </item>
           </submenu>
-         
+
 
           <item>
             <attribute name="label">Display Only Active</attribute>
@@ -4851,7 +4851,7 @@ that you wish to delete.               </property>
                         <property name="can-focus">1</property>
                       </object>
                     </child>
-                    
+
                   </object>
                 </child>
               </object>
@@ -4904,7 +4904,7 @@ that you wish to delete.               </property>
                             </layout>
                           </object>
                         </child>
-                        
+
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes"> Fraction for Correlation </property>
@@ -4954,7 +4954,7 @@ that you wish to delete.               </property>
 
               </object>
             </child>
-            
+
             <child>
               <object class="GtkFrame" id="ligand_expert_frame">
                 <property name="margin-start">8</property>
@@ -5276,7 +5276,7 @@ Do you want to continue?
             </child>
           </object>
         </child>
-        
+
       </object>
     </child>
   </object>
@@ -5742,7 +5742,7 @@ Do you want to continue?
         <property name="margin-top">6</property>
         <property name="margin-bottom">6</property>
 
-        
+
         <child>
           <object class="GtkGrid" id="edit_map_parameters_grid">
 
@@ -5811,7 +5811,7 @@ Do you want to continue?
                 </layout>
               </object>
             </child>
-            
+
             <child>
               <object class="GtkEntry" id="map_parameters_em_radius_entry">
                 <property name="can-focus">1</property>
@@ -5933,7 +5933,7 @@ Do you want to continue?
                 </layout>
               </object>
             </child>
-            
+
           </object>
         </child> <!-- end the grid -->
 
@@ -6472,7 +6472,7 @@ Do you want to continue?
                   <property name="can-focus">0</property>
                   <signal name="clicked" handler="on_python_scripting_button" swapped="no"/>
                   <property name="margin-start">2</property>
-                  <property name="halign">end</property> 
+                  <property name="halign">end</property>
                   <child>
                     <object class="GtkBox">
                       <property name="orientation">vertical</property>
@@ -6593,7 +6593,7 @@ Do you want to continue?
                                     </child>
                                   </object>
                                 </child>
-                                
+
 
                                 <child>
                                   <object class="GtkBox" id="dynamic_validation_vbox">
@@ -7125,7 +7125,7 @@ Do you want to continue?
                         <property name="margin-end">6</property>
                       </object>
                     </child>
- 
+
                     <child>
                       <object class="GtkBox">
                         <property name="orientation">horizontal</property>
@@ -8269,25 +8269,33 @@ Do you want to continue?
               </object>
             </child>
             <child>
+<<<<<<< HEAD:ui/coot-gtk4.ui
               <object class="GtkButton" id="add_alt_conf_button">
+>>>>>>> 463543fe5 (test alt gui):coot-gtk4.ui
                 <child>
                   <object class="GtkBox">
                     <property name="orientation">horizontal</property>
                     <property name="spacing">5</property>
                     <child>
                       <object class="GtkImage">
+<<<<<<< HEAD:ui/coot-gtk4.ui
                         <property name="icon-name">add-alt-conf</property>
+>>>>>>> 463543fe5 (test alt gui):coot-gtk4.ui
                       </object>
                     </child>
                     <child>
                       <object class="GtkLabel">
+<<<<<<< HEAD:ui/coot-gtk4.ui
                         <property name="label" translatable="yes">Add Alt Conf</property>
+>>>>>>> 463543fe5 (test alt gui):coot-gtk4.ui
                       </object>
                     </child>
                   </object>
                 </child>
                 <property name="can-focus">0</property>
+<<<<<<< HEAD:ui/coot-gtk4.ui
                 <signal name="clicked" handler="on_model_toolbar_add_alt_conf_button_clicked"/>
+>>>>>>> 463543fe5 (test alt gui):coot-gtk4.ui
               </object>
             </child>
             <child>
@@ -9220,7 +9228,7 @@ density (too big to be waters):
             </child>
           </object>
         </child>
-        
+
         <child>
           <object class="GtkFrame">
             <property name="margin-top">6</property>
@@ -9272,7 +9280,7 @@ density (too big to be waters):
           </child>
           </object>
         </child>
-        
+
         <child>
           <object class="GtkBox">>
           <property name="margin-top">6</property>
@@ -9300,7 +9308,7 @@ density (too big to be waters):
             <property name="label" translatable="yes">Invert Masking?</property>
           </object>
         </child>
-        
+
         <child>
           <object class="GtkSeparator">
             <property name="margin-top">4</property>
@@ -9337,7 +9345,7 @@ density (too big to be waters):
             </child>
           </object>
         </child>
-        
+
       </object>
     </child>
   </object>>
@@ -10871,7 +10879,7 @@ If you need symmetry, setup ccp4 before starting coot
                         </items>
                       </object>
                     </child>
-                    
+
                   </object>
                 </child>
               </object>
@@ -11801,7 +11809,7 @@ just the cell and symmetry)
     <child type="titlebar">
     </child>
   </object>
-  
+
 
   <object class="GtkDialog" id="remarks_browser_molecule_chooser_dialog">
     <property name="title" translatable="yes">Coot Header Browser for Molecule</property>
@@ -13756,7 +13764,7 @@ Then use &quot;Run Refmac...&quot; from the &quot;Model/Fit/Refine&quot; dialog.
                                 <signal name="state-set" handler="show_symmetry_switch_state_set"/>
                               </object>
                             </child>
-                            
+
                             <child>
                               <object class="GtkLabel">
                                 <property name="label" translatable="yes">On</property>
@@ -13769,7 +13777,7 @@ Then use &quot;Run Refmac...&quot; from the &quot;Model/Fit/Refine&quot; dialog.
 
                           </object>
                         </child>
-                        
+
 
                         <child>
                           <object class="GtkCheckButton" id="symmetry_always_on_checkbutton">
@@ -13982,7 +13990,7 @@ Then use &quot;Run Refmac...&quot; from the &quot;Model/Fit/Refine&quot; dialog.
                     <signal name="state-set" handler="show_unit_cell_switch_state_set"/>
                   </object>
                 </child>
-                
+
                 <child>
                   <object class="GtkLabel">
                     <property name="label" translatable="yes">Show</property>
@@ -15681,7 +15689,7 @@ Move a copy?</property>
         <child>
           <object class="GtkShortcutsGroup">
             <property name="title">Map Functions</property>
-            
+
             <child>
               <object class="GtkShortcutsShortcut">
                 <property name="accelerator">plus</property>
@@ -15742,7 +15750,7 @@ Move a copy?</property>
         <child>
           <object class="GtkShortcutsGroup">
             <property name="title">Building Functions</property>
-            
+
             <child>
               <object class="GtkShortcutsShortcut">
                 <property name="accelerator">y</property>
