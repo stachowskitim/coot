@@ -7,7 +7,7 @@ std::string
 make_main_window_title() {
 
    std::string version_string = VERSION;
-   std::string main_title = "Coot " + version_string;
+   std::string main_title = "Tim's Dev Coot " + version_string;
 
 #ifdef MAKE_ENHANCED_LIGAND_TOOLS
    // main_title += " EL";
