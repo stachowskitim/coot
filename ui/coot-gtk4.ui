@@ -1469,7 +1469,7 @@ Copyright 2023 Global Phasing Ltd.</property>
                   <object class="GtkBox" id="vbox90">
                     <property name="orientation">vertical</property>
                     <child>
-                      <object class="GtkCheckButton" id="add_alt_conf_ca_radiobutton">
+                      <object class="GtkToggleButton" id="add_alt_conf_ca_radiobutton">
                         <property name="label" translatable="yes">Split Single Residue at C-alpha</property>
                         <property name="can-focus">0</property>
                         <property name="use-underline">1</property>
@@ -1478,7 +1478,7 @@ Copyright 2023 Global Phasing Ltd.</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkCheckButton" id="add_alt_conf_whole_single_residue_radiobutton">
+                      <object class="GtkToggleButton" id="add_alt_conf_whole_single_residue_radiobutton">
                         <property name="label" translatable="yes">Split All of a Single Residue</property>
                         <property name="can-focus">1</property>
                         <property name="use-underline">1</property>
@@ -1487,7 +1487,7 @@ Copyright 2023 Global Phasing Ltd.</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkCheckButton" id="add_alt_conf_residue_range_radiobutton">
+                      <object class="GtkToggleButton" id="add_alt_conf_residue_range_radiobutton">
                         <property name="label" translatable="yes">Split a Residue Range</property>
                         <property name="can-focus">1</property>
                         <property name="use-underline">1</property>
@@ -13212,7 +13212,7 @@ Then use &quot;Run Refmac...&quot; from the &quot;Model/Fit/Refine&quot; dialog.
                   <object class="GtkBox">
                     <property name="spacing">4</property>
                     <child>
-                      <object class="GtkToggleButton" id="shader_settings_basic_mode_togglebutton">
+                      <object class="GtkCheckButton" id="shader_settings_basic_mode_togglebutton">
                         <property name="label" translatable="yes">Basic   </property>
                         <property name="can-focus">1</property>
                         <property name="active">1</property>
@@ -13224,7 +13224,7 @@ Then use &quot;Run Refmac...&quot; from the &quot;Model/Fit/Refine&quot; dialog.
                       </object>
                     </child>
                     <child>
-                      <object class="GtkToggleButton" id="shader_settings_standard_mode_togglebutton">
+                      <object class="GtkCheckButton" id="shader_settings_standard_mode_togglebutton">
                         <property name="label" translatable="yes">Plain   </property>
                         <property name="can-focus">1</property>
                         <property name="group">shader_settings_basic_mode_togglebutton</property>
@@ -13236,7 +13236,7 @@ Then use &quot;Run Refmac...&quot; from the &quot;Model/Fit/Refine&quot; dialog.
                       </object>
                     </child>
                     <child>
-                      <object class="GtkToggleButton" id="shader_settings_fancy_mode_togglebutton">
+                      <object class="GtkCheckButton" id="shader_settings_fancy_mode_togglebutton">
                         <property name="label" translatable="yes">Fancy   </property>
                         <property name="can-focus">1</property>
                         <property name="group">shader_settings_basic_mode_togglebutton</property>

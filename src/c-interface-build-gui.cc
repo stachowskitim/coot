@@ -565,11 +565,11 @@ void setup_alt_conf_with_dialog(GtkWidget *dialog) {
    //   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_range), TRUE);
 
    if (graphics_info_t::alt_conf_split_type_number() == 0)
-      gtk_check_button_set_active(GTK_CHECK_BUTTON(widget_ca), TRUE);
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_ca), TRUE);
    if (graphics_info_t::alt_conf_split_type_number() == 1)
-      gtk_check_button_set_active(GTK_CHECK_BUTTON(widget_whole), TRUE);
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_whole), TRUE);
    if (graphics_info_t::alt_conf_split_type_number() == 2)
-      gtk_check_button_set_active(GTK_CHECK_BUTTON(widget_range), TRUE);
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_range), TRUE);
 
    // Tim's work ^
 
