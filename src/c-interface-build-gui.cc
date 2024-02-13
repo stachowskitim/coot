@@ -564,14 +564,15 @@ void setup_alt_conf_with_dialog(GtkWidget *dialog) {
    //if (graphics_info_t::alt_conf_split_type_number() == 2)
    //   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_range), TRUE);
 
+   std::cout << graphics_info_t::alt_conf_split_type_number()
+
    if (graphics_info_t::alt_conf_split_type_number() == 0)
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_ca), TRUE);
    if (graphics_info_t::alt_conf_split_type_number() == 1)
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_whole), TRUE);
    if (graphics_info_t::alt_conf_split_type_number() == 2)
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_range), TRUE);
-
-   // Tim's work ^
+   // Tim's work
 
    if (graphics_info_t::alt_conf_split_type_number() < 2) {
       std::cout << "Click on the residue you want to split" << std::endl;
