@@ -189,6 +189,10 @@ if coot_gui_api.main_menubar():
             submenu_modules, "Cryo-EM",
             lambda func: coot_gui.add_module_cryo_em())
 
+        coot_gui.add_simple_coot_menu_menuitem(
+            submenu_modules, "FLEXR",
+            lambda func: flexr_extentions.add_module_flexr())
+
     # ---------------------------------------------------------------------
     #     Settings
     # ---------------------------------------------------------------------
@@ -1198,8 +1202,8 @@ if coot_gui_api.main_menubar():
            coot_gui.add_simple_coot_menu_menuitem(
                submenu_views,
                "Add a Spin View...",
-               lambda func: coot_gui.generic_double_entry("Number of Steps", 
-                                                          "Number of Degrees (total)", "3600", "360", 
+               lambda func: coot_gui.generic_double_entry("Number of Steps",
+                                                          "Number of Degrees (total)", "3600", "360",
                                                           False, False,  #check button text and callback
                                                           "  Add Spin  ",
                                                           lambda text_1, text_2: coot.add_spin_view("Spin", int(text_1), float(text_2))))

@@ -22,7 +22,7 @@
 
 import coot
 import gi
-gi.require_version("Gtk", "4.0") 
+gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, GObject
 from gi.repository import Gio
 from gi.repository import GLib
@@ -41,6 +41,7 @@ import coot_find_baddies
 import jligand_gui
 import parse_pisa_xml
 import ncs
+import flexr_extentions
 
 def test_func_for_menus(menumodel: Gio.MenuModel, menu_label: str, submenu_label: str):
     print("Finding", menu_label, submenu_label)
@@ -64,7 +65,7 @@ def test_func_for_menus(menumodel: Gio.MenuModel, menu_label: str, submenu_label
         # v = thing.get_value()
         # print("v:", v)
 
-    
+
 menumodel = coot_gui_api.main_menumodel()
 if menumodel:
     test_func_for_menus(menumodel, "Edit", "Setting...")

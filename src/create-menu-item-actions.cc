@@ -1381,6 +1381,15 @@ void add_shelx_module_action(G_GNUC_UNUSED GSimpleAction *simple_action,
    info_dialog("INFO:: No SHELXL interface yet! - sorry");
 }
 
+void add_flexr_module_action(G_GNUC_UNUSED GSimpleAction *simple_action,
+                             G_GNUC_UNUSED GVariant *parameter,
+                             G_GNUC_UNUSED gpointer user_data) {
+
+   safe_python_command("import flexr_extentions");
+   safe_python_command("flexr_extentions.add_flexr_module()");
+   g_simple_action_set_enabled(simple_action,FALSE);
+}
+
 void add_views_module_action(G_GNUC_UNUSED GSimpleAction *simple_action,
                              G_GNUC_UNUSED GVariant *parameter,
                              G_GNUC_UNUSED gpointer user_data) {
@@ -3504,6 +3513,7 @@ create_actions(GtkApplication *application) {
    add_action(      "add_refine_module_action",       add_refine_module_action);
    add_action(       "add_shelx_module_action",        add_shelx_module_action);
    add_action(       "add_views_module_action",        add_views_module_action);
+   add_action(       "add_flexr_module_action",        add_flexr_module_action);
 
    // Calculate -> NCS
 

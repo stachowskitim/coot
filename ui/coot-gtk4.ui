@@ -942,6 +942,10 @@
         <attribute name="action">app.add_prosmart_module_action</attribute>
       </item>
       <item>
+        <attribute name="label">FLEXR</attribute>
+        <attribute name="action">app.add_flexr_module_action</attribute>
+      </item>
+      <item>
         <attribute name="label">RCrane</attribute>
         <attribute name="action">app.add_rcrane_module_action</attribute>
       </item>
