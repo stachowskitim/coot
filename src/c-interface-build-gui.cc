@@ -556,12 +556,22 @@ void setup_alt_conf_with_dialog(GtkWidget *dialog) {
    GtkWidget *widget_whole = widget_from_builder("add_alt_conf_whole_single_residue_radiobutton");
    GtkWidget *widget_range = widget_from_builder("add_alt_conf_residue_range_radiobutton");
 
-   if (graphics_info_t::alt_conf_split_type_number() == 0)
-      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget_ca), TRUE);
-   if (graphics_info_t::alt_conf_split_type_number() == 1)
-      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget_whole), TRUE);
-   if (graphics_info_t::alt_conf_split_type_number() == 2)
-      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget_range), TRUE);
+   //original
+   //if (graphics_info_t::alt_conf_split_type_number() == 0)
+   //   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_ca), TRUE);
+   //if (graphics_info_t::alt_conf_split_type_number() == 1)
+   //   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_whole), TRUE);
+   //if (graphics_info_t::alt_conf_split_type_number() == 2)
+   //   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_range), TRUE);
+
+   //if (graphics_info_t::alt_conf_split_type_number() == 0)
+   //   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_ca), TRUE);
+   //if (graphics_info_t::alt_conf_split_type_number() == 1)
+   //   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_whole), TRUE);
+   //if (graphics_info_t::alt_conf_split_type_number() == 2)
+   //   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget_range), TRUE);
+
+   // Tim's work ^
 
    if (graphics_info_t::alt_conf_split_type_number() < 2) {
       std::cout << "Click on the residue you want to split" << std::endl;
