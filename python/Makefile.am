@@ -1,18 +1,18 @@
 # Makefile.am
-# 
+#
 # Copyright 2005, 2006, 2007 The University of York
 # Copyright 2005, 2006, 2007 Bernhard Lohkamp
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
@@ -41,6 +41,6 @@ dist_pkgpython_PYTHON = \
    coot_acedrg_link.py coot_toolbuttons.py rcrane_loader.py add_linked_cho.py coot_find_baddies.py \
    coot_chemical_feature_clusters.py coot_res_spec_utils.py coot_output_to_window.py \
    populate_python_menus.py coot_hole.py refine.py what_check.py \
-   coot_testing_utils.py \
+   coot_testing_utils.py flexr_extentions.py \
    $(TEXI_FILE)
 
