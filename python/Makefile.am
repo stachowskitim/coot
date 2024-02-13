@@ -41,6 +41,10 @@ dist_pkgpython_PYTHON = \
    coot_acedrg_link.py coot_toolbuttons.py rcrane_loader.py add_linked_cho.py coot_find_baddies.py \
    coot_chemical_feature_clusters.py coot_res_spec_utils.py coot_output_to_window.py \
    populate_python_menus.py coot_hole.py refine.py what_check.py \
-   coot_testing_utils.py flexr_extentions.py flexr.py ./src/*/*.py \
+   coot_testing_utils.py flexr_extentions.py flexr.py \
+   ./building/__init__.py       ./flexrpkg/__init__.py       \
+   ./tools/__init__.py ./building/flexr_analysis.py ./flexrpkg/flexr_find.py     \
+   ./tools/arguments.py ./building/flexr_build.py    ./flexrpkg/top_level.py      \
+   ./tools/ringer_tools.py \
    $(TEXI_FILE)
 
