@@ -1386,7 +1386,7 @@ void add_flexr_module_action(G_GNUC_UNUSED GSimpleAction *simple_action,
                              G_GNUC_UNUSED gpointer user_data) {
 
    safe_python_command("import flexr_extentions");
-   safe_python_command("flexr_extentions.add_flexr_module()");
+   safe_python_command("flexr_extentions.add_module_flexr()");
    g_simple_action_set_enabled(simple_action,FALSE);
 }
 
