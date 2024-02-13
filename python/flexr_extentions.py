@@ -426,5 +426,5 @@ def add_flexr_gui():
 
     window.show()
 
-add_module_flexr()
+#add_module_flexr()
 
