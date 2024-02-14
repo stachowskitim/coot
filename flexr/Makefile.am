@@ -1,6 +1,6 @@
 # Makefile.am
 #
-# Copyright 2012 Kevin Keating
+# Copyright 2024 Tim Stachowski
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,19 +17,17 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA
 
+SUBDIRS = building flexrpkg tools
+
 flexrdir = $(pythondir)/coot/src
-flexrlibdir = $(pythondir)/coot/library
 
 dist_flexr_DATA = \
-   src/building/__init__.py         \
-   src/building/flexr_analysis.py           \
-   src/building/flexr_build.py           \
-   src/flexrpkg/flexr_find.py     \
-   src/flexrpkg/top_level.py  \
-   src/flexrpkg/__init__.py  \
-   src/tools/__init__.py  \
-   src/tools/arguments.py  \
-   src/tools/ringer_tools.py
-
-dist_flexrlib_DATA = \
-   library/rotamer_library_coot.csv
+   __init__.py         \
+   flexr_analysis.py           \
+   flexr_build.py           \
+   flexr_find.py     \
+   top_level.py  \
+   __init__.py  \
+   __init__.py  \
+   arguments.py  \
+   ringer_tools.py

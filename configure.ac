@@ -520,8 +520,11 @@ auxil/vectors/Makefile
 src/Makefile
 src/coot
 <<<<<<< HEAD
+<<<<<<< HEAD
 ui/Makefile
 >>>>>>> 710fb61ce (config file)
+>>>>>>> 316ef1b01 (master makefile)
+flexr/src/Makefile
 flexr/Makefile
 ])
 AC_OUTPUT
