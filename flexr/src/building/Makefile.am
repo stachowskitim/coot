@@ -20,4 +20,4 @@
 dist_pkgpython_PYTHON = \
    __init__.py         \
    flexr_analysis.py           \
-   flexr_build.py           \
+   flexr_build.py

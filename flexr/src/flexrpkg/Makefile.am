@@ -20,4 +20,4 @@
 dist_pkgpython_PYTHON = \
    flexr_find.py     \
    top_level.py  \
-   __init__.py  \
+   __init__.py

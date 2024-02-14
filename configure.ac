@@ -526,12 +526,11 @@ ui/Makefile
 >>>>>>> 710fb61ce (config file)
 >>>>>>> 316ef1b01 (master makefile)
 >>>>>>> 5a6add22c (makefiles)
-flexr/src/Makefile
 flexr/Makefile
+flexr/src/Makefile
 flexr/src/building/Makefile
 flexr/src/flexrpkg/Makefile
 flexr/src/tools/Makefile
-flexr/src/Makefile
 flexr/library/Makefile
 ])
 AC_OUTPUT
