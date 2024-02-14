@@ -17,4 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA
 
-SUBDIRS = building flexrpkg tools
+dist_pkgpython_PYTHON = \
+   __init__.py         \
+   flexr_analysis.py           \
+   flexr_build.py           \

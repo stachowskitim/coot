@@ -1,3 +1,1 @@
-
-dist_pkgpython_PYTHON = \
-   rotamer_library_coot.csv
+dist_pkgpython_PYTHON = rotamer_library_coot.csv
