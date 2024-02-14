@@ -519,7 +519,10 @@ auxil/strand-analysis/Makefile
 auxil/vectors/Makefile
 src/Makefile
 src/coot
+<<<<<<< HEAD
 ui/Makefile
+>>>>>>> 710fb61ce (config file)
+flexr/Makefile
 ])
 AC_OUTPUT
 
