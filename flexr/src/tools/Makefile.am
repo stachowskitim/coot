@@ -17,7 +17,9 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA
 
-dist_pkgpython_PYTHON = \
+flexrdir = $(pythondir)/coot/src/tools
+
+dist_flexr_DATA = \
    __init__.py  \
    arguments.py  \
    ringer_tools.py

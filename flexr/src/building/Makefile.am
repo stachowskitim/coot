@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA
 
-flexrdir = $(pythondir)/coot/flexr
+flexrdir = $(pythondir)/coot/src/building
 
 dist_flexr_DATA = \
    __init__.py         \
