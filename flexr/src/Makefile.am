@@ -19,9 +19,9 @@
 
 SUBDIRS = building flexrpkg tools
 
-flexrdir = $(pythondir)/coot/src
+#flexrdir = $(pythondir)/coot/src
 
-dist_flexr_DATA = \
+dist_pkgpython_PYTHON = \
    __init__.py         \
    flexr_analysis.py           \
    flexr_build.py           \

@@ -1,0 +1,2 @@
+
+SUBDIRS = library src
