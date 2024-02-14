@@ -18,14 +18,18 @@
 # 02110-1301, USA
 
 flexrdir = $(pythondir)/coot/src
+flexrlibdir = $(pythondir)/coot/library
 
 dist_flexr_DATA = \
-   building/__init__.py         \
-   building/flexr_analysis.py           \
-   building/flexr_build.py           \
-   flexrpkg/flexr_find.py     \
-   flexrpkg/top_level.py  \
-   flexrpkg/__init__.py  \
-   tools/__init__.py  \
-   tools/arguments.py  \
-   tools/ringer_tools.py
+   src/building/__init__.py         \
+   src/building/flexr_analysis.py           \
+   src/building/flexr_build.py           \
+   src/flexrpkg/flexr_find.py     \
+   src/flexrpkg/top_level.py  \
+   src/flexrpkg/__init__.py  \
+   src/tools/__init__.py  \
+   src/tools/arguments.py  \
+   src/tools/ringer_tools.py
+
+dist_flexrlib_DATA = \
+   library/rotamer_library_coot.csv
