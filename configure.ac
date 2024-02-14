@@ -528,6 +528,8 @@ ui/Makefile
 >>>>>>> 5a6add22c (makefiles)
 flexr/src/Makefile
 flexr/Makefile
+flexr/src/Makefile
+flexr/library/Makefile
 ])
 AC_OUTPUT
 
