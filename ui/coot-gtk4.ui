@@ -932,8 +932,8 @@
       <item>
         <attribute name="label">FLEXR</attribute>
         <attribute name="action">app.add_flexr_module_action</attribute>
-      </item>
       <item>
+      </item>
       <item>
         <attribute name="label">HOLE</attribute>
         <attribute name="action">app.add_HOLE_module_action</attribute>
