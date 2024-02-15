@@ -4783,7 +4783,6 @@ void
       gtk_widget_set_visible(scrolled_window, TRUE);
       gtk_widget_set_visible(box, TRUE);
       gtk_widget_set_visible(vbox_outer, TRUE);
-      gtk_widget_set_visible(close_button, TRUE);
       set_transient_for_main_window(dialog);
       }
 
