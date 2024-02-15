@@ -487,10 +487,10 @@ namespace coot {
 
 } // namespace coot
 
-enum { IN_STEREO_MONO = 0, 
-       IN_STEREO_HARDWARE_STEREO=1, 
-       IN_STEREO_ZALMAN_RIGHT=5, 
-       IN_STEREO_ZALMAN_LEFT=6, 
+enum { IN_STEREO_MONO = 0,
+       IN_STEREO_HARDWARE_STEREO=1,
+       IN_STEREO_ZALMAN_RIGHT=5,
+       IN_STEREO_ZALMAN_LEFT=6,
        IN_STEREO_SIDE_BY_SIDE_LEFT=10,
        IN_STEREO_SIDE_BY_SIDE_RIGHT=11
 };
@@ -2670,7 +2670,7 @@ public:
 
    static float get_x_base_for_hud_geometry_bars();
 
-   static Texture texture_for_camera_facing_quad; // debugging            
+   static Texture texture_for_camera_facing_quad; // debugging
    static TextureMesh tmesh_for_camera_facing_quad;
    static Shader camera_facing_quad_shader;  // uses camera-facing-quad-shader-for-testing.shader
 
@@ -2782,7 +2782,7 @@ public:
    static short int delete_item_sidechain_range;
    static short int delete_item_chain;
    // must save the widget so that it can be deleted when the item is selected.
-   
+
    static GtkWidget *delete_item_widget; // 20220723-PE do I need this now?
    static int keep_delete_item_active_flag;
    // really, we should save pick data with atom or residue specs, so
@@ -2961,7 +2961,7 @@ public:
 			                        // moving_atoms_asc
    // 20220812-PE new interface
    void do_rotamers(int imol, mmdb::Atom *active_atom);
-   
+
    // 20220812-PE void fill_rotamer_selection_buttons(GtkWidget *window, int atom_index, int imol) const;
    void fill_rotamer_selection_buttons(GtkWidget *window, mmdb::Atom *atom, int imol) const;
 
@@ -5276,6 +5276,10 @@ string   static std::string sessionid;
 
    // "Coot: " will be prepended to the dialog title before use
    void fill_generic_validation_box_of_buttons(const std::string &dialog_title,
+                                               const std::vector<labelled_button_info_t> &v);
+
+   // "Coot: " will be prepended to the dialog title before use
+   void fill_generic_validation_box_of_buttons_scroll(const std::string &dialog_title,
                                                const std::vector<labelled_button_info_t> &v);
 
 
