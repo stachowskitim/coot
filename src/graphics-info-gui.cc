@@ -4750,6 +4750,7 @@ void
       GtkWidget *scrolled_window = gtk_scrolled_window_new();
       gtk_window_set_default_size(GTK_WINDOW(dialog),180,300);
       gtk_window_set_title(GTK_WINDOW(dialog),title.c_str());
+      GtkWidget *vbox_outer = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
       GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
 
       if (scrolled_window) {
@@ -4765,7 +4766,27 @@ void
             gtk_box_append(GTK_BOX(box_for_item), button);
             gtk_box_append(GTK_BOX(box), box_for_item);
          }
+      gtk_box_append(GTK_BOX(vbox_outer), scrolled_window);
+      gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), box);
+      gtk_widget_set_vexpand(box, TRUE);               // not sure that all of these are needed.
+      gtk_widget_set_hexpand(scrolled_window, TRUE);    //
+      gtk_widget_set_vexpand(scrolled_window, TRUE);    //
+
+      gtk_widget_set_margin_start (vbox_outer, 4);
+      gtk_widget_set_margin_end   (vbox_outer, 4);
+      gtk_widget_set_margin_top   (vbox_outer, 4);
+      gtk_widget_set_margin_bottom(vbox_outer, 4);
+
+      //g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(on_dialog_box_of_buttons_response), dialog);
+      //gtk_dialog_add_button(GTK_DIALOG(dialog), close_button_label.c_str(), GTK_RESPONSE_CLOSE);
+
+      gtk_widget_set_visible(scrolled_window, TRUE);
+      gtk_widget_set_visible(box, TRUE);
+      gtk_widget_set_visible(vbox_outer, TRUE);
+      gtk_widget_set_visible(close_button, TRUE);
+      set_transient_for_main_window(dialog);
       }
+
       //std::string title = std::string("Coot: ") + dialog_label;
       //gtk_window_set_title(GTK_WINDOW(dialog), title.c_str());
       //set_transient_for_main_window(dialog);
