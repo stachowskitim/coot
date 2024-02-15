@@ -4753,7 +4753,7 @@ void
       GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
 
       if (scrolled_window) {
-         clear_out_container(scrolled_window);
+         //clear_out_container(scrolled_window);
          for (unsigned int i = 0; i < v.size(); i++) {
             GtkWidget *box_for_item = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
             GtkWidget *button = gtk_button_new_with_label(v[i].label.c_str());
