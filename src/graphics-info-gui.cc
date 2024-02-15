@@ -4761,15 +4761,15 @@ graphics_info_t::update_molecular_representation_widgets() {
              clipper::Coord_orth *co = new clipper::Coord_orth(v[i].position); // never deleted
              void *user_data = reinterpret_cast<void *>(co);
              g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(cb), user_data);
-             gtk_box_append(GTK_BOX(box_for_item), button);
-             gtk_box_append(GTK_BOX(scrolled_window), box_for_item);
+             //gtk_box_append(GTK_BOX(box_for_item), button);
+             //gtk_box_append(GTK_BOX(scrolled_window), box_for_item);
           }
        }
-       GtkWidget *dialog = gtk_scrolled_window_new();
-       std::string title = std::string("Coot: ") + dialog_label;
-       gtk_window_set_title(GTK_WINDOW(dialog), title.c_str());
-       set_transient_for_main_window(dialog);
-       gtk_window_present(GTK_WINDOW(dialog));
+       //GtkWidget *dialog = gtk_scrolled_window_new();
+       //std::string title = std::string("Coot: ") + dialog_label;
+       //gtk_window_set_title(GTK_WINDOW(dialog), title.c_str());
+       //set_transient_for_main_window(dialog);
+       //gtk_window_present(GTK_WINDOW(dialog));
     }
  }
 
