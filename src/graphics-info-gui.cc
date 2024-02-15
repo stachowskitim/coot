@@ -4745,9 +4745,18 @@ graphics_info_t::update_molecular_representation_widgets() {
     };
 
     if (! v.empty()) {
-       GtkWidget *scrolled_window = gtk_scrolled_window_new();
-       if (scrolled_window) {
-          clear_out_container(scrolled_window);
+       //window
+       GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+       gtk_window_set_default_size(GTK_WINDOW(window),400,300);
+       //scrolled window
+       GtkWidget = *scrolled_window = gtk_scrolled_window_new();
+       gtk_container_add(GTK_CONTAINER(window),scrolled_window);
+       //box
+       GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL,5);
+       gtk_container_add(GTK_CONTAINER(scrolled_window),box);
+       //stuff in box
+       if (box) {
+          clear_out_container(box);
           for (unsigned int i = 0; i < v.size(); i++) {
              GtkWidget *box_for_item = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
              GtkWidget *button = gtk_button_new_with_label(v[i].label.c_str());
@@ -4761,13 +4770,14 @@ graphics_info_t::update_molecular_representation_widgets() {
              clipper::Coord_orth *co = new clipper::Coord_orth(v[i].position); // never deleted
              void *user_data = reinterpret_cast<void *>(co);
              g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(cb), user_data);
-             gtk_container_add(GTK_BOX(box_for_item), button);
-             gtk_container_add(GTK_CONTAINER(scrolled_window), box_for_item);
+             gtk_box_append(GTK_BOX(box_for_item), button);
+             gtk_box_append(GTK_BOX(box), box_for_item);
           }
        }
        //GtkWidget *dialog = widget_from_builder("generic_validation_box_of_buttons_dialog");
        //std::string title = std::string("Coot: ") + dialog_label;
        //gtk_window_set_title(GTK_WINDOW(dialog), title.c_str());
+       //
        //set_transient_for_main_window(dialog);
        //gtk_window_present(GTK_WINDOW(dialog));
     }
