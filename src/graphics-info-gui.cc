@@ -357,7 +357,7 @@ graphics_info_t::save_directory_from_filechooser(const GtkWidget *filechooser) {
          GFileInfo *file_info = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
                                                   G_FILE_QUERY_INFO_NONE, NULL, &error);
          const char *filename = g_file_info_get_name(file_info);
-         
+
 	 if (filename) {
 	    directory_for_filechooser = coot::util::file_name_directory(filename);
 	    // g_free(filename);
@@ -484,7 +484,7 @@ graphics_info_t::set_scrollable_map(int imol) {
    activate_scroll_radio_button_in_display_manager(imol);
 
 }
-   
+
 
 // i find this somewhat asthetically pleasing (maybe because the
 // display control widgets are uniquely named [which was a bit of a
@@ -1411,7 +1411,7 @@ graphics_info_t::fill_output_residue_info_widget(GtkWidget *dialog, int imol,
       gtk_label_set_text(GTK_LABEL(label_widget), label.c_str());
 
    }
-   
+
 }
 
 void
@@ -1478,7 +1478,7 @@ graphics_info_t::fill_output_residue_info_widget_atom(GtkWidget *dialog, GtkWidg
    //
    GtkWidget *residue_info_occ_entry = gtk_entry_new();
    // gtk_widget_ref (residue_info_occ_entry);
-   
+
    // g_object_set_data_full(G_OBJECT (residue_info_dialog_local),
    // widget_name.c_str(), residue_info_occ_entry, NULL);
 
@@ -1793,7 +1793,7 @@ graphics_info_t::new_fill_combobox_with_coordinates_options(GtkWidget *combobox_
       gtk_list_store_append(store, &iter);
       gtk_list_store_set(store, &iter, 0, imol, 1, ss.c_str(), -1);
    }
-   
+
    GtkTreeModel *model = GTK_TREE_MODEL(store);
    GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combobox_molecule), renderer, true);
@@ -3501,7 +3501,7 @@ void
       graphics_info_t g;
       coot::atom_spec_t *atom_spec_p = static_cast<coot::atom_spec_t *>(user_data);
       const auto &atom_spec(*atom_spec_p);
-      
+
       g.set_go_to_atom_molecule(atom_spec.int_user_data);
       g.set_go_to_atom_chain_residue_atom_name(atom_spec.chain_id.c_str(),
 					       atom_spec.res_no,
@@ -4591,7 +4591,7 @@ graphics_info_t::set_show_molecular_representation(int imol, unsigned int mesh_i
          auto mesh = meshes[mesh_idx];
          mesh.set_draw_mesh_state(on_off);
       }
-   } 
+   }
 }
 
 // static
@@ -4734,6 +4734,44 @@ graphics_info_t::update_molecular_representation_widgets() {
     }
  }
 
+// Tim did this. "Coot: " will be prepended to the dialog label before use
+ void
+    graphics_info_t::fill_generic_validation_box_of_buttons_scroll(const std::string &dialog_label,
+                                                            const std::vector<labelled_button_info_t> &v) {
+
+    auto cb = +[] (GtkButton *button, gpointer user_data) {
+       clipper::Coord_orth *co = reinterpret_cast<clipper::Coord_orth *>(user_data);
+       set_rotation_centre(*co);
+    };
+
+    if (! v.empty()) {
+       GtkWidget *scrolled_window = widget_from_builder("generic_validation_box_of_buttons_box");
+       if (scrolled_window) {
+          clear_out_container(scrolled_window);
+          for (unsigned int i = 0; i < v.size(); i++) {
+             GtkWidget *box_for_item = gtk_scrolled_window_new(GTK_ORIENTATION_HORIZONTAL, 4);
+             GtkWidget *button = gtk_button_new_with_label(v[i].label.c_str());
+             gtk_widget_set_hexpand(button, TRUE);
+
+             // I can't do this:
+             // std::shared_ptr<clipper::Coord_orth> sco = std::make_shared<clipper::Coord_orth>(v[i].position);
+             // void *user_data = reinterpret_cast<void *>(sco);
+             // I should use a GObject?
+
+             clipper::Coord_orth *co = new clipper::Coord_orth(v[i].position); // never deleted
+             void *user_data = reinterpret_cast<void *>(co);
+             g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(cb), user_data);
+             gtk_box_append(GTK_BOX(box_for_item), button);
+             gtk_box_append(GTK_BOX(scrolled_window), box_for_item);
+          }
+       }
+       GtkWidget *dialog = widget_from_builder("generic_validation_box_of_buttons_dialog");
+       std::string title = std::string("Coot: ") + dialog_label;
+       gtk_window_set_title(GTK_WINDOW(dialog), title.c_str());
+       set_transient_for_main_window(dialog);
+       gtk_window_present(GTK_WINDOW(dialog));
+    }
+ }
 
 void
 graphics_info_t::add_shortcuts_to_window(GtkWidget *shortcuts_window) {
