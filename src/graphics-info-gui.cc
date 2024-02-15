@@ -4745,7 +4745,7 @@ graphics_info_t::update_molecular_representation_widgets() {
     };
 
     if (! v.empty()) {
-       GtkWidget *scrolled_window = gtk_scrolled_window_new("generic_validation_box_of_buttons__scroll_box");
+       GtkWidget *scrolled_window = gtk_scrolled_window_new();
        if (scrolled_window) {
           clear_out_container(scrolled_window);
           for (unsigned int i = 0; i < v.size(); i++) {
@@ -4765,7 +4765,7 @@ graphics_info_t::update_molecular_representation_widgets() {
              gtk_box_append(GTK_BOX(scrolled_window), box_for_item);
           }
        }
-       GtkWidget *dialog = gtk_scrolled_window_new("generic_validation_box_of_buttons__scroll_dialog");
+       GtkWidget *dialog = gtk_scrolled_window_new();
        std::string title = std::string("Coot: ") + dialog_label;
        gtk_window_set_title(GTK_WINDOW(dialog), title.c_str());
        set_transient_for_main_window(dialog);
