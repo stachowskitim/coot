@@ -4745,11 +4745,11 @@ graphics_info_t::update_molecular_representation_widgets() {
     };
 
     if (! v.empty()) {
-       GtkWidget *scrolled_window = widget_from_builder("generic_validation_box_of_buttons_box");
+       GtkWidget *scrolled_window = gtk_scrolled_window_new("generic_validation_box_of_buttons__scroll_box");
        if (scrolled_window) {
           clear_out_container(scrolled_window);
           for (unsigned int i = 0; i < v.size(); i++) {
-             GtkWidget *box_for_item = gtk_scrolled_window_new(GTK_ORIENTATION_HORIZONTAL, 4);
+             GtkWidget *box_for_item = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
              GtkWidget *button = gtk_button_new_with_label(v[i].label.c_str());
              gtk_widget_set_hexpand(button, TRUE);
 
@@ -4765,7 +4765,7 @@ graphics_info_t::update_molecular_representation_widgets() {
              gtk_box_append(GTK_BOX(scrolled_window), box_for_item);
           }
        }
-       GtkWidget *dialog = widget_from_builder("generic_validation_box_of_buttons_dialog");
+       GtkWidget *dialog = gtk_scrolled_window_new("generic_validation_box_of_buttons__scroll_dialog");
        std::string title = std::string("Coot: ") + dialog_label;
        gtk_window_set_title(GTK_WINDOW(dialog), title.c_str());
        set_transient_for_main_window(dialog);
