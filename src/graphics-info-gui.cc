@@ -4749,7 +4749,8 @@ void
       GtkWidget *dialog = gtk_dialog_new();
       GtkWidget *scrolled_window = gtk_scrolled_window_new();
       gtk_window_set_default_size(GTK_WINDOW(dialog),180,300);
-      gtk_window_set_title(GTK_WINDOW(dialog),title);
+      gtk_window_set_title(GTK_WINDOW(dialog),title.c_str());
+      GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
 
       if (scrolled_window) {
          clear_out_container(scrolled_window);
