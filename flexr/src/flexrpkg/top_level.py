@@ -34,18 +34,30 @@ def get_coot_loc():
     try:
         cootexe = '/opt/homebrew/bin/coot'
         version = os.popen('/opt/homebrew/bin/coot --version').read()
-        cootversion = version.split()[3]
-        pythonversion = version.split()[8][:4]
-        cootloc = '/opt/homebrew/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
-        libraryloc = '/opt/homebrew/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
+        if 'HEAD' in version.split()[2]:
+            cootversion = version.split()[2]
+            pythonversion = version.split()[8][:4]
+            cootloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
+            libraryloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
+        else:
+            cootversion = version.split()[3]
+            pythonversion = version.split()[8][:4]
+            cootloc = '/opt/homebrew/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
+            libraryloc = '/opt/homebrew/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
     except:
         try:
             cootexe = '/usr/local/bin/coot'
             version = os.popen('/usr/local/bin/coot --version').read()
-            cootversion = version.split()[3]
-            pythonversion = version.split()[8][:4]
-            cootloc = '/usr/local/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
-            libraryloc = '/usr/local/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
+            if 'HEAD' in version.split()[2]:
+                cootversion = version.split()[2]
+                pythonversion = version.split()[8][:4]
+                cootloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
+                libraryloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
+            else:
+                cootversion = version.split()[3]
+                pythonversion = version.split()[8][:4]
+                cootloc = '/usr/local/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
+                libraryloc = '/usr/local/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
         except:
             cootloc = 'NULL'
             libraryloc = 'NULL'
