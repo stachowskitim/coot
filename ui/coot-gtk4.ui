@@ -2093,11 +2093,11 @@ Copyright 2023 Global Phasing Ltd.</property>
         <property name="margin-top">4</property>
         <property name="margin-bottom">4</property>
         <child>
-          <object class="GtkScrolledWindow" id="scrolledwindow10">
+          <object class="GtkScrolledWindow" id="scrolledwindowTIM">
             <property name="min-content-width">200</property>
             <property name="min-content-height">200</property>
             <child>
-              <object class="GtkViewport" id="viewport6">
+              <object class="GtkViewport" id="viewportTIM">
                 <child>
                   <object class="GtkBox" id="generic_validation_box_of_buttons_box">
                     <property name="orientation">vertical</property>
