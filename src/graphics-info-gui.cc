@@ -4735,63 +4735,47 @@ graphics_info_t::update_molecular_representation_widgets() {
  }
 
 // Tim did this. "Coot: " will be prepended to the dialog label before use
-void
-   graphics_info_t::fill_generic_validation_box_of_buttons_scroll(const std::string &dialog_label,
-                                                           const std::vector<labelled_button_info_t> &v) {
-   auto cb = +[] (GtkButton *button, gpointer user_data) {
-      clipper::Coord_orth *co = reinterpret_cast<clipper::Coord_orth *>(user_data);
-      set_rotation_centre(*co);
-   };
+ void
+    graphics_info_t::fill_generic_validation_box_of_buttons_scroll(const std::string &dialog_label,
+                                                            const std::vector<labelled_button_info_t> &v) {
 
-   if (! v.empty()) {
+    auto cb = +[] (GtkButton *button, gpointer user_data) {
+       clipper::Coord_orth *co = reinterpret_cast<clipper::Coord_orth *>(user_data);
+       set_rotation_centre(*co);
+    };
 
-      std::string title = std::string("Coot: ") + dialog_label;
-      GtkWidget *dialog = gtk_dialog_new();
-      GtkWidget *scrolled_window = gtk_scrolled_window_new();
-      gtk_window_set_default_size(GTK_WINDOW(dialog),180,300);
-      gtk_window_set_title(GTK_WINDOW(dialog),title.c_str());
-      GtkWidget *vbox_outer = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-      GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+    if (! v.empty()) {
 
-      if (scrolled_window) {
-         //clear_out_container(scrolled_window);
-         for (unsigned int i = 0; i < v.size(); i++) {
-            GtkWidget *box_for_item = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
-            GtkWidget *button = gtk_button_new_with_label(v[i].label.c_str());
+       GtkWidget *box = widget_from_builder("generic_validation_box_of_buttons_box");
+       GtkWidget *scrolled_window = gtk_scrolled_window_new();
+       gtk_container_add(GTK_CONTAINER(scrolled_window),box)
 
-            clipper::Coord_orth *co = new clipper::Coord_orth(v[i].position); // never deleted
-            void *user_data = reinterpret_cast<void *>(co);
+       if (box) {
+          //clear_out_container(box);
+          for (unsigned int i = 0; i < v.size(); i++) {
+             GtkWidget *box_for_item = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+             GtkWidget *button = gtk_button_new_with_label(v[i].label.c_str());
+             gtk_widget_set_hexpand(button, TRUE);
 
-            g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(cb), user_data);
-            gtk_box_append(GTK_BOX(box_for_item), button);
-            gtk_box_append(GTK_BOX(box), box_for_item);
-         }
-      gtk_box_append(GTK_BOX(vbox_outer), scrolled_window);
-      gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), box);
-      gtk_widget_set_vexpand(box, TRUE);               // not sure that all of these are needed.
-      gtk_widget_set_hexpand(scrolled_window, TRUE);    //
-      gtk_widget_set_vexpand(scrolled_window, TRUE);    //
+             // I can't do this:
+             // std::shared_ptr<clipper::Coord_orth> sco = std::make_shared<clipper::Coord_orth>(v[i].position);
+             // void *user_data = reinterpret_cast<void *>(sco);
+             // I should use a GObject?
 
-      gtk_widget_set_margin_start (vbox_outer, 4);
-      gtk_widget_set_margin_end   (vbox_outer, 4);
-      gtk_widget_set_margin_top   (vbox_outer, 4);
-      gtk_widget_set_margin_bottom(vbox_outer, 4);
-
-      //g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(on_dialog_box_of_buttons_response), dialog);
-      //gtk_dialog_add_button(GTK_DIALOG(dialog), close_button_label.c_str(), GTK_RESPONSE_CLOSE);
-
-      gtk_widget_set_visible(scrolled_window, TRUE);
-      gtk_widget_set_visible(box, TRUE);
-      gtk_widget_set_visible(vbox_outer, TRUE);
-      set_transient_for_main_window(dialog);
-      }
-
-      //std::string title = std::string("Coot: ") + dialog_label;
-      //gtk_window_set_title(GTK_WINDOW(dialog), title.c_str());
-      //set_transient_for_main_window(dialog);
-      //gtk_window_present(GTK_WINDOW(dialog));
-   }
-}
+             clipper::Coord_orth *co = new clipper::Coord_orth(v[i].position); // never deleted
+             void *user_data = reinterpret_cast<void *>(co);
+             g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(cb), user_data);
+             gtk_box_append(GTK_BOX(box_for_item), button);
+             gtk_box_append(GTK_BOX(box), box_for_item);
+          }
+       }
+       GtkWidget *dialog = widget_from_builder("generic_validation_box_of_buttons_dialog");
+       std::string title = std::string("Coot: ") + dialog_label;
+       gtk_window_set_title(GTK_WINDOW(dialog), title.c_str());
+       set_transient_for_main_window(dialog);
+       gtk_window_present(GTK_WINDOW(dialog));
+    }
+ }
 
 void
 graphics_info_t::add_shortcuts_to_window(GtkWidget *shortcuts_window) {
