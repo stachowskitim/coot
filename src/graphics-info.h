@@ -5278,11 +5278,6 @@ string   static std::string sessionid;
    void fill_generic_validation_box_of_buttons(const std::string &dialog_title,
                                                const std::vector<labelled_button_info_t> &v);
 
-   // "Coot: " will be prepended to the dialog title before use
-   void fill_generic_validation_box_of_buttons_scroll(const std::string &dialog_title,
-                                               const std::vector<labelled_button_info_t> &v);
-
-
    // 20230419-PE ----- a holder for the OpenGL-based Ramachandran Plots
    // each rama plot is held in a GtkBox - and that box has a "Close" button
    // which destroys the plot - and removes it from this vector

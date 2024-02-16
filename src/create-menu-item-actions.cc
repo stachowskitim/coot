@@ -2711,7 +2711,7 @@ void residues_with_alt_confs_action(G_GNUC_UNUSED GSimpleAction *simple_action,
             add_status_bar_text("No residues with Alt confs in this molecule");
          } else {
             std::vector<labelled_button_info_t> lbv = residues_vec_to_labelled_buttons_vec(rv);
-            g.fill_generic_validation_box_of_buttons_scroll("Residues with AltConfs", lbv);
+            g.fill_generic_validation_box_of_buttons("Residues with AltConfs", lbv);
          }
       }
    }
