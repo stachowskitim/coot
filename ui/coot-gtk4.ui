@@ -8285,41 +8285,26 @@ Do you want to continue?
             </child>
             <!-- Tim added this -->
             <child>
-<<<<<<< HEAD:ui/coot-gtk4.ui
-<<<<<<< HEAD:ui/coot-gtk4.ui
+
               <object class="GtkButton" id="add_alt_conf_button">
->>>>>>> 463543fe5 (test alt gui):coot-gtk4.ui
->>>>>>> c97a4e429 (test alt gui3):coot-gtk4.ui
                 <child>
                   <object class="GtkBox">
                     <property name="orientation">horizontal</property>
                     <property name="spacing">5</property>
                     <child>
                       <object class="GtkImage">
-<<<<<<< HEAD:ui/coot-gtk4.ui
-<<<<<<< HEAD:ui/coot-gtk4.ui
                         <property name="icon-name">add-alt-conf</property>
->>>>>>> 463543fe5 (test alt gui):coot-gtk4.ui
->>>>>>> c97a4e429 (test alt gui3):coot-gtk4.ui
                       </object>
                     </child>
                     <child>
                       <object class="GtkLabel">
-<<<<<<< HEAD:ui/coot-gtk4.ui
-<<<<<<< HEAD:ui/coot-gtk4.ui
                         <property name="label" translatable="yes">Add Alt Conf</property>
->>>>>>> 463543fe5 (test alt gui):coot-gtk4.ui
->>>>>>> c97a4e429 (test alt gui3):coot-gtk4.ui
                       </object>
                     </child>
                   </object>
                 </child>
                 <property name="can-focus">0</property>
-<<<<<<< HEAD:ui/coot-gtk4.ui
-<<<<<<< HEAD:ui/coot-gtk4.ui
                 <signal name="clicked" handler="on_model_toolbar_add_alt_conf_button_clicked"/>
->>>>>>> 463543fe5 (test alt gui):coot-gtk4.ui
->>>>>>> c97a4e429 (test alt gui3):coot-gtk4.ui
               </object>
             </child>
             <!-- Tim added this ^ -->
