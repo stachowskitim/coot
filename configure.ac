@@ -519,13 +519,7 @@ auxil/strand-analysis/Makefile
 auxil/vectors/Makefile
 src/Makefile
 src/coot
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 ui/Makefile
->>>>>>> 710fb61ce (config file)
->>>>>>> 316ef1b01 (master makefile)
->>>>>>> 5a6add22c (makefiles)
 flexr/Makefile
 flexr/src/Makefile
 flexr/src/building/Makefile
