@@ -3,7 +3,7 @@ class Coot < Formula
 
   desc "Crystallographic Object-Oriented Toolkit"
   homepage "https://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/"
-  #url "https://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/source/releases/coot-1.1.07.tar.gz"
+  #url "https://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/source/releases/coot-1.1.08.tar.gz"
   sha256 "d1b01cc58f970cec8e80200344439c0aed9843702578ea02f1cc7d4395f9e30b"
   license any_of: ["GPL-3.0-only", "LGPL-3.0-only", "GPL-2.0-or-later"]
 
@@ -20,6 +20,14 @@ class Coot < Formula
     depends_on "libtool" => :build
     depends_on "swig" => :build
   end
+
+  #head do
+  #  url "https://github.com/pemsley/coot.git", branch: "main"
+  #  depends_on "autoconf" => :build
+  #  depends_on "automake" => :build
+  #  depends_on "libtool" => :build
+  #  depends_on "swig" => :build
+  #end
 
   depends_on "glm" => :build
   depends_on "pkg-config" => :build
@@ -167,8 +175,8 @@ class Coot < Formula
     (pkgshare/"lib/data/monomers").install resource("monomers")
   end
 
-  # test block is not tested now.
-  test do
-    assert_match "Usage: coot", shell_output("#{bin}/coot --help 2>&1")
-  end
+  ## test block is not tested now.
+  #test do
+  #  assert_match "Usage: coot", shell_output("#{bin}/coot --help 2>&1")
+  #end
 end

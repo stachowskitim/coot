@@ -31,41 +31,52 @@ def intro_messages():
     time.sleep(1)
 
 def get_coot_loc():
-    try:
-        cootexe = '/opt/homebrew/bin/coot'
-        version = os.popen('/opt/homebrew/bin/coot --version').read()
-        if 'HEAD' in version.split()[2]:
-            cootversion = version.split()[2]
-            pythonversion = version.split()[8][:4]
-            cootloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
-            libraryloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
+    cootexe = '/opt/homebrew/bin/coot'
+    version = os.popen('/opt/homebrew/bin/coot --version').read()
+    cootversion = version.split()[0]
+    pythonversion = version.split()[5][:4]
+    cootloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
+    libraryloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
+    if os.path.isfile(libraryloc):
+        print('FLEXR thinks things are located here:')
+        print(libraryloc,cootloc,cootexe)
+        return str(libraryloc),str(cootloc),str(cootexe)
+    else:
+        cootversion = version.split()[9][:7]
+        pythonversion = version.split()[5][:4]
+        cootloc = '/opt/homebrew/Cellar/coot/HEAD-'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
+        libraryloc = '/opt/homebrew/Cellar/coot/HEAD-'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
+        if os.path.isfile(libraryloc):
+            print('FLEXR thinks things are located here:')
+            print(libraryloc,cootloc,cootexe)
+            return str(libraryloc),str(cootloc),str(cootexe)
         else:
-            cootversion = version.split()[3]
-            pythonversion = version.split()[8][:4]
-            cootloc = '/opt/homebrew/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
-            libraryloc = '/opt/homebrew/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
-    except:
-        try:
             cootexe = '/usr/local/bin/coot'
             version = os.popen('/usr/local/bin/coot --version').read()
-            if 'HEAD' in version.split()[2]:
-                cootversion = version.split()[2]
-                pythonversion = version.split()[8][:4]
-                cootloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
-                libraryloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
+            cootversion = version.split()[0]
+            pythonversion = version.split()[5][:4]
+            cootloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
+            libraryloc = cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
+            if os.path.isfile(libraryloc):
+                print('FLEXR thinks things are located here:')
+                print(libraryloc,cootloc,cootexe)
+                return str(libraryloc),str(cootloc),str(cootexe)
             else:
-                cootversion = version.split()[3]
-                pythonversion = version.split()[8][:4]
-                cootloc = '/usr/local/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
-                libraryloc = '/usr/local/Cellar/coot/'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
-        except:
-            cootloc = 'NULL'
-            libraryloc = 'NULL'
-            cootexe = 'NULL'
-    print('FLEXR thinks things are located here:')
-    print(libraryloc,cootloc,cootexe)
-    return str(libraryloc),str(cootloc),str(cootexe)
-
+                cootversion = version.split()[9][:7]
+                pythonversion = version.split()[5][:4]
+                cootloc = '/usr/local/Cellar/coot/HEAD-'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/'
+                libraryloc = '/usr/local/Cellar/coot/HEAD'+cootversion+'/lib/python'+pythonversion+'/site-packages/coot/library/rotamer_library_coot.csv'
+                if os.path.isfile(libraryloc):
+                    print('FLEXR thinks things are located here:')
+                    print(libraryloc,cootloc,cootexe)
+                    return str(libraryloc),str(cootloc),str(cootexe)
+                else:
+                    cootloc = 'NULL'
+                    libraryloc = 'NULL'
+                    cootexe = 'NULL'
+                    print('FLEXR thinks things are located here:')
+                    print(libraryloc,cootloc,cootexe)
+                    return str(libraryloc),str(cootloc),str(cootexe)
 
 def check_library():
     #disable printing pandas warnings
