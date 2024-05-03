@@ -1,0 +1,1 @@
+SUBDIRS = building flexrpkg tools
