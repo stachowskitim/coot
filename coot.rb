@@ -172,8 +172,3 @@ class Coot < Formula
     assert_match "Usage: coot", shell_output("#{bin}/coot --help 2>&1")
   end
 end
-  # test block is not tested now.
-  test do
-    assert_match "Usage: coot", shell_output("#{bin}/coot --help 2>&1")
-  end
-end
