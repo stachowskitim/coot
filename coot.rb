@@ -157,6 +157,8 @@ class Coot < Formula
     ENV.append_to_cflags "-fPIC" if OS.linux?
     system "./configure", *args
     system "make"
+    # fix executable path
+    inreplace "src/Coot", "progdir=\"$thisdir/.libs\"", "progdir=\"$thisdir/../libexec\""
     ENV.deparallelize { system "make", "install" }
 
     # install reference data
@@ -165,6 +167,11 @@ class Coot < Formula
     (pkgshare/"lib/data/monomers").install resource("monomers")
   end
 
+  # test block is not tested now.
+  test do
+    assert_match "Usage: coot", shell_output("#{bin}/coot --help 2>&1")
+  end
+end
   # test block is not tested now.
   test do
     assert_match "Usage: coot", shell_output("#{bin}/coot --help 2>&1")
