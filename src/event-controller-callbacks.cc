@@ -1,3 +1,28 @@
+/*
+ * src/event-controller-callbacks.cc
+ *
+ * Copyright 2022 by Medical Research Council
+ * Author: Paul Emsley
+ *
+ * This file is part of Coot
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copies of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
+ * See http://www.gnu.org/licenses/
+ *
+ */
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp> // for to_string()
@@ -131,6 +156,8 @@ graphics_info_t::on_glarea_drag_update_secondary(GtkGestureDrag *gesture,
                                                  double drag_delta_x, double drag_delta_y,
                                                  GtkWidget *gl_area) {
 
+   if (false)
+      std::cout << "on_glarea_drag_update_secondary() " << std::endl;
 
    auto do_view_zoom = [] (double drag_delta_x, double drag_delta_y) {
       mouse_zoom(drag_delta_x, drag_delta_y);
@@ -317,7 +344,7 @@ graphics_info_t::on_glarea_click(GtkGestureClick *controller,
          handled = TRUE;
          g.graphics_draw(); // unhighlight the arrow
       }
-      if (true)
+      if (false)
          std::cout << "debug:: check_if_refinement_dialog_arrow_tab_was_clicked() returns " << handled << std::endl;
       return gboolean(handled);
    };
@@ -339,6 +366,8 @@ graphics_info_t::on_glarea_click(GtkGestureClick *controller,
       if (n_press == 2) { // otherwise triple clicking would toggle the label off, we don't want that.
 
          bool handled = false;
+
+         std::cout << "########## double-click!" << std::endl;
 
          if (in_moving_atoms_drag_atom_mode_flag) {
             if (last_restraints_size() > 0) {
@@ -365,7 +394,7 @@ graphics_info_t::on_glarea_click(GtkGestureClick *controller,
 
       if (n_press == 1) {
 
-         std::cout << "on_glarea_click() 1 click " << std::endl;
+         // std::cout << "##################### on_glarea_click() 1 click " << std::endl;
 
          bool handled = check_if_refinement_dialog_arrow_tab_was_clicked();
 
@@ -384,40 +413,48 @@ graphics_info_t::on_glarea_click(GtkGestureClick *controller,
             GdkModifierType modifier = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(controller));
             // std::cout << "debug:: on_glarea_click(); modifier: " << modifier << std::endl;
 
-            if (modifier == 17) { // shift
+            if (tomo_picker_flag) {
 
-               bool intermediate_atoms_only_flag = false;
-               pick_info naii = atom_pick_gtk3(intermediate_atoms_only_flag);
-               if (naii.success) {
-                  int imol = naii.imol;
-                  mmdb::Atom *at = molecules[imol].atom_sel.atom_selection[naii.atom_index];
-                  molecules[imol].add_to_labelled_atom_list(naii.atom_index);
-                  graphics_draw();
-                  handled = true;
-               }
+               bool shift_is_pressed = (modifier & GDK_SHIFT_MASK);
+               handled = tomo_pick(x,y, n_press, shift_is_pressed);
 
             } else {
 
-               // std::cout << "Here with in_range_define " << in_range_define << std::endl;
-               if (in_range_define == 1 || in_range_define == 2) {
+               if (modifier == 17) { // shift
+
                   bool intermediate_atoms_only_flag = false;
                   pick_info naii = atom_pick_gtk3(intermediate_atoms_only_flag);
                   if (naii.success) {
                      int imol = naii.imol;
                      mmdb::Atom *at = molecules[imol].atom_sel.atom_selection[naii.atom_index];
-                     if (in_range_define == 1) {
-                        in_range_first_picked_atom  = coot::atom_spec_t(at);
-                        in_range_first_picked_atom.int_user_data = imol;
-                        molecules[imol].add_to_labelled_atom_list(naii.atom_index);
+                     molecules[imol].add_to_labelled_atom_list(naii.atom_index);
+                     graphics_draw();
+                     handled = true;
+                  }
+
+               } else {
+
+                  // std::cout << "Here with in_range_define " << in_range_define << std::endl;
+                  if (in_range_define == 1 || in_range_define == 2) {
+                     bool intermediate_atoms_only_flag = false;
+                     pick_info naii = atom_pick_gtk3(intermediate_atoms_only_flag);
+                     if (naii.success) {
+                        int imol = naii.imol;
+                        mmdb::Atom *at = molecules[imol].atom_sel.atom_selection[naii.atom_index];
+                        if (in_range_define == 1) {
+                           in_range_first_picked_atom  = coot::atom_spec_t(at);
+                           in_range_first_picked_atom.int_user_data = imol;
+                           molecules[imol].add_to_labelled_atom_list(naii.atom_index);
+                        }
+                        if (in_range_define == 2) {
+                           in_range_second_picked_atom = coot::atom_spec_t(at);
+                           in_range_second_picked_atom.int_user_data = imol;
+                           molecules[imol].add_to_labelled_atom_list(naii.atom_index);
+                        }
+                        in_range_define = 2;
+                        graphics_draw(); // make the label appear
+                        handled =  true;
                      }
-                     if (in_range_define == 2) {
-                        in_range_second_picked_atom = coot::atom_spec_t(at);
-                        in_range_second_picked_atom.int_user_data = imol;
-                        molecules[imol].add_to_labelled_atom_list(naii.atom_index);
-                     }
-                     in_range_define = 2;
-                     graphics_draw(); // make the label appear
-                     handled =  true;
                   }
                }
             }

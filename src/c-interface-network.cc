@@ -4,19 +4,19 @@
  * Copyright 2009, 2012 by The University of Oxford
  * 
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  * 
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
  */
 
 #ifdef USE_PYTHON
@@ -675,7 +675,7 @@ void fetch_emdb_map(const std::string &emd_accession_code) {
 int fetch_cod_entry(const std::string &cod_code) {
 
    int imol = -1;
-   std::string url = "http://www.crystallography.net/cod/" + cod_code + ".cif?CODSESSION=fromCoot";
+   std::string url = "https://www.crystallography.net/cod/" + cod_code + ".cif";
    std::cout << "url: " << url << std::endl;
    std::string download_dir = "coot-download";
    download_dir = coot::get_directory(download_dir.c_str());

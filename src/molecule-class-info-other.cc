@@ -7,19 +7,19 @@
  * Author: Paul Emsley
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
  */
 
 #ifdef USE_PYTHON
@@ -5021,14 +5021,12 @@ molecule_class_info_t::inverted_chiral_volumes() const {
    std::vector<std::string> unknown_types_vec;
    std::pair<std::vector<std::string>, std::vector<coot::atom_spec_t> > pair(unknown_types_vec, v);
 
-#ifdef HAVE_GSL
    if (atom_sel.n_selected_atoms > 0) {
       // grr Geom_p() is not static
       graphics_info_t g;
       pair = coot::inverted_chiral_volumes(imol_no, atom_sel.mol, g.Geom_p(),
                                            graphics_info_t::cif_dictionary_read_number);
    }
-#endif //  HAVE_GSL
 
    return pair;
 }
@@ -5093,7 +5091,6 @@ molecule_class_info_t::fit_residue_range_to_map_by_simplex(int resno1, int resno
                                                            std::string chain_id,
                                                            int imol_for_map) {
 
-#ifdef HAVE_GSL
    int selHnd = atom_sel.mol->NewSelection();
    atom_sel.mol->SelectAtoms(selHnd, 0,  chain_id.c_str(),
                              resno1, "*",
@@ -5118,7 +5115,6 @@ molecule_class_info_t::fit_residue_range_to_map_by_simplex(int resno1, int resno
    }
 
    atom_sel.mol->DeleteSelection(selHnd);
-#endif // HAVE_GSL
 }
 
 
@@ -6865,7 +6861,6 @@ molecule_class_info_t::last_residue_in_chain(mmdb::Chain *chain_p) const {
 void
 molecule_class_info_t::find_deviant_geometry(float strictness) {
 
-#ifdef HAVE_GSL
    if (atom_sel.n_selected_atoms > 0) {
       std::vector<coot::atom_spec_t> fixed_atom_specs;
       short int have_flanking_residue_at_end = 0;
@@ -6952,7 +6947,6 @@ molecule_class_info_t::find_deviant_geometry(float strictness) {
 	 }
       }
    }
-#endif // HAVE_GSL
 }
 
 

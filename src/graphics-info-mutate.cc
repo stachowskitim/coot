@@ -5,17 +5,17 @@
  * Author: Paul Emsley
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
  * Foundation, Inc.,  51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
@@ -383,7 +383,7 @@ graphics_info_t::mutate_chain(int imol, const std::string &chain_id,
 	       molecules[imol].align_and_mutate(chain_id, coot::fasta(seq), renumber_residues_flag,
 						alignment_wgap, alignment_wspace);
 
-	    info_dialog_alignment(mutation_info);
+	    info_dialog_alignment(mutation_info); // protected
 
 	    if (do_auto_fit_flag) {
 	       int imol_map = Imol_Refinement_Map();

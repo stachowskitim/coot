@@ -6,19 +6,19 @@
  * Author: Paul Emsley
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
  * Foundation, Inc.,  51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
  */
 
 #include "validation-graphs/validation-graphs.hh"
@@ -88,7 +88,7 @@ void graphics_info_t::refresh_validation_graph_model_list() {
 
    g_debug("refresh_validation_graph_model_list() called.");
 
-   std::cout << "----------------------- refresh_validation_graph_model_list --------- " << std::endl;
+   // std::cout << "-------------- refresh_validation_graph_model_list ------- " << std::endl;
 
    gtk_tree_model_foreach(
                           GTK_TREE_MODEL(validation_graph_model_list),
@@ -117,10 +117,13 @@ void graphics_info_t::refresh_validation_graph_model_list() {
    // if (model is no longer on the list) {
    // 	// destroy all opened validation graphs (via calls to destroy_validation_graph())
    // }
-   if (!is_valid_model_molecule(active_validation_graph_model_idx)) {
-      std::cout << "TODO:: in refresh_validation_graph_model_list() Destroy graphs for model "
-                << active_validation_graph_model_idx << " here..." << std::endl;
-      // destroy_validation_graph(coot::validation_graph_type type);
+
+   if (idx_active != -1) {
+      if (!is_valid_model_molecule(active_validation_graph_model_idx)) {
+         std::cout << "TODO:: in refresh_validation_graph_model_list() Destroy graphs for model "
+                   << active_validation_graph_model_idx << " here..." << std::endl;
+         // destroy_validation_graph(coot::validation_graph_type type);
+      }
    }
 }
 
@@ -938,6 +941,8 @@ graphics_info_t::update_validation(int imol_changed_model) {
 
    // 20230910-PE, well, we only want to update the validation if it was already being displayed.
 
+   if (! use_graphics_interface_flag) return;
+
    update_validation_graphs(imol_changed_model);
    update_ramachandran_plot(imol_changed_model);
    update_dynamic_validation_for_molecule(imol_changed_model); // maybe.
@@ -950,6 +955,8 @@ graphics_info_t::update_validation(int imol_changed_model) {
 
 void
 graphics_info_t::update_validation_graphs(int imol_changed_model) {
+
+   if (! use_graphics_interface_flag) return;
 
    // imol has change (e.g. a rotamer or RSR) and now I want to update the graphs
    // for that molecule if they are displayed.
@@ -1127,7 +1134,6 @@ graphics_info_t::geometric_distortion(int imol) {
 #endif
 }
 
-#ifdef HAVE_GSL
 coot::geometry_distortion_info_container_t
 graphics_info_t::geometric_distortions(int imol, mmdb::Residue *residue_p, bool with_nbcs) {
 
@@ -1149,11 +1155,6 @@ graphics_info_t::geometric_distortions(int imol, mmdb::Residue *residue_p, bool 
    }
    return gdc;
 }
-#endif // HAVE_GSL
-
-
-// #ifdef HAVE_GSL
-// #if defined(HAVE_GNOME_CANVAS) || defined(HAVE_GTK_CANVAS)
 
 std::vector<coot::geometry_distortion_info_container_t>
 graphics_info_t::geometric_distortions_from_mol(int imol, const atom_selection_container_t &asc,
@@ -1342,8 +1343,6 @@ graphics_info_t::geometric_distortions_from_mol(int imol, const atom_selection_c
    // print_geometry_distortion(dcv);
    return dcv;
 }
-// #endif // HAVE_GSL
-// #endif // defined(HAVE_GNOME_CANVAS) || defined(HAVE_GTK_CANVAS)
 
 void
 graphics_info_t::print_geometry_distortion(const std::vector<coot::geometry_distortion_info_container_t> &v) const {
@@ -1639,12 +1638,94 @@ graphics_info_t::omega_distortions_from_mol(const atom_selection_container_t &as
    return om_dist;
 }
 
+// 20240420-PE this return value can be exported to python rather than displayed internally
 coot::rotamer_graphs_info_t
 graphics_info_t::rotamer_graphs(int imol) {
 
-   coot::rotamer_graphs_info_t info; // return value
+   coot::rotamer_graphs_info_t info;
+
+   if (is_valid_model_molecule(imol)) {
+      mmdb::Manager *mol = molecules[imol].atom_sel.mol;
+
+      for(int imod = 1; imod<=mol->GetNumberOfModels(); imod++) {
+         mmdb::Model *model_p = mol->GetModel(imod);
+         if (model_p) {
+            int n_chains = model_p->GetNumberOfChains();
+            for (int ichain=0; ichain<n_chains; ichain++) {
+               mmdb::Chain *chain_p = model_p->GetChain(ichain);
+               int n_res = chain_p->GetNumberOfResidues();
+               for (int ires=0; ires<n_res; ires++) {
+                  mmdb::Residue *residue_p = chain_p->GetResidue(ires);
+                  if (residue_p) {
+                     std::string alt_conf = ""; // fix this lazyness one day
+                     coot::rotamer_probability_info_t d_score =
+                        get_rotamer_probability(residue_p, alt_conf, mol, rotamer_lowest_probability, 1);
+                     int this_resno = residue_p->GetSeqNum();
+                     std::string this_inscode = residue_p->GetInsCode();
+                     std::string chain_id = residue_p->GetChainID();
+                     std::string str = std::to_string(this_resno);
+                     str += chain_id;
+                     str += " ";
+                     str += residue_p->name;
+                     str += " ";
+                     double distortion = 0.0;
+                     switch (d_score.state) {
+
+                     case 1: {
+                        // On reflection we don't want found
+                        // rotamers with low probabilities to be
+                        // marked (nearly as or more) bad than not
+                        // found rotamers:
+                        distortion = 100.0 * rotamer_distortion_scale/d_score.probability;
+                        distortion = distortion > 100.0 ? 100.0 : distortion;
+                        str += " ";
+                        str += d_score.rotamer_name;
+                        str += " ";
+                        str += "Probability: ";
+                        str += float_to_string(d_score.probability);
+                        str += "%";
+                        coot::graph_rotamer_info_t ri(chain_id, this_resno, this_inscode, d_score.probability, d_score.rotamer_name);
+                        info.info.push_back(ri);
+                        break;
+                     }
+
+                     case 0: {
+                        distortion = 100.0;
+                        str += "Missing Atoms";
+                        coot::graph_rotamer_info_t ri(chain_id, this_resno, this_inscode, 0.0, "Missing Atoms");
+                        info.info.push_back(ri);
+                        break;
+                     }
+
+                     case -1: {
+                        distortion = 100.0;
+                        coot::graph_rotamer_info_t ri(chain_id, this_resno, this_inscode, 0.0, "Rotamer not recognised");
+                        info.info.push_back(ri);
+                        str += "Rotamer not recognised";
+                        break;
+                     }
+
+                     case -2: {  // don't plot a block for this one.
+                        distortion = 0.0;
+                        break;
+                     }
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+   return info;
+}
+
 
 #ifdef HAVE_GOOCANVAS
+
+coot::rotamer_graphs_info_t
+graphics_info_t::old_rotamer_graphs(int imol) {
+
+   coot::rotamer_graphs_info_t info; // return value
 
    if (imol >= 0) {
       if (imol < n_molecules()) {
@@ -1788,9 +1869,9 @@ graphics_info_t::rotamer_graphs(int imol) {
 	 }
       }
    }
-#endif // HAVE_GOOCANVAS
    return info;
 }
+#endif // HAVE_GOOCANVAS
 
 #ifdef HAVE_GOOCANVAS
 std::vector<coot::geometry_graph_block_info_generic>

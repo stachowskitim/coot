@@ -13,12 +13,12 @@
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
  */
 
 // $Id: c-interface.cc 1458 2007-01-26 20:20:18Z emsley $
@@ -442,7 +442,7 @@ int test_function(int i, int j) {
 // Martin's MoleculeToTriangles
 //
 //
-#include <MoleculesToTriangles/CXXClasses/RendererGL.h>
+// #include <MoleculesToTriangles/CXXClasses/RendererGL.h>
 #include <MoleculesToTriangles/CXXClasses/Light.h>
 #include <MoleculesToTriangles/CXXClasses/Camera.h>
 // #include <CXXClasses/CameraPort.h>

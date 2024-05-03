@@ -27,6 +27,7 @@
 #include "validation-information.hh"
 #include "superpose-results.hh"
 #include "coot-utils/simple-mesh.hh"
+#include "coot-utils/texture-as-floats.hh"
 #include "phi-psi-prob.hh"
 #include "instancing.hh"
 #include "coot-colour.hh" // put this in utils
@@ -407,6 +408,8 @@ public:
 
    //! @return the name of the molecule
    std::string get_molecule_name(int imol) const;
+   //! set the molecule name
+   void set_molecule_name(int imol, const std::string &new_name);
    //! debugging function: display the table of molecule and names
    void display_molecule_names_table() const;
    //! @return is this a valid model?
@@ -511,6 +514,16 @@ public:
    //! @return a vector of non-standard residues (so that they can be used for auxiliary dictionary import)
    std::vector<std::string> non_standard_residue_types_in_model(int imol) const;
 
+#ifdef SWIG
+#else
+#ifdef MAKE_ENHANCED_LIGAND_TOOLS
+   //! Result to be eaten by C++ only.
+   //! Extract ligand restraints from the dictionary store and make an rdkit molecule
+   //! @return a null pointer on failure.
+   RDKit::RWMol get_rdkit_mol(const std::string &residue_name, int imol_enc);
+#endif
+#endif
+
    // -------------------------------- coordinates utils -----------------------------------
    //! \name Coordinates Utils
 
@@ -564,6 +577,8 @@ public:
    std::string get_cif_file_name(const std::string &comp_id, int imol_enc) const;
    //! @return a string that is the contents of a dictionary cif file
    std::string get_cif_restraints_as_string(const std::string &comp_id, int imol_enc) const;
+   //! copy the dictionary that is specific for imol_current so that it can be used with imol_new
+   bool copy_dictionary(const std::string &monomer_name, int imol_current, int imol_new);
    //! get a monomer
    //! @return the new molecule index on success and -1 on failure
    int get_monomer(const std::string &monomer_name);
@@ -1683,6 +1698,23 @@ public:
    //! @return a vector of residue specifiers for the ligand residues - the residue name is encoded
    //! in the `string_user_data` data item of the residue specifier
    std::vector<coot::residue_spec_t> get_non_standard_residues_in_molecule(int imol) const;
+
+   //! The new arguments, `data_value_for_top`, `data_value_for_bottom` should be pre-calculated (don't
+   //! calculate them for every call to this function).
+   //! @return a texture_as_floats_t object for the given section
+   //! On failure, the image_data vector is empty.
+   texture_as_floats_t get_map_section_texture(int imol, int section_id, int axis,
+                                               float data_value_for_bottom, float data_value_for_top) const;
+
+   //! @return the number of section in the map along the give axis.
+   //! (0 for X-axis, 1 for y-axis, 2 for Z-axis).
+   //! return -1 on failure.
+   int get_number_of_map_sections(int imol_map, int axis_id) const;
+
+   // -------------------------------- Others -------------------------------------
+   //! \name Other Features
+
+   coot::simple_mesh_t make_mesh_from_gltf_file(const std::string &file_name);
 
    // -------------------------------- Testing -------------------------------------
    //! \name Testing functions

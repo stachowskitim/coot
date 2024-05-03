@@ -1,3 +1,29 @@
+/*
+ * api/coot-molecule.cc
+ * 
+ * Copyright 2020 by Medical Research Council
+ * Author: Paul Emsley
+ *
+ * This file is part of Coot
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copies of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
+ * See http://www.gnu.org/licenses/
+ *
+ */
+
 
 #include <iostream>
 #include <sstream>
@@ -4118,8 +4144,7 @@ coot::molecule_t::init_all_molecule_refinement(mmdb::Manager *mol_ref, coot::pro
    unsigned int n_threads = 8;
    last_restraints->thread_pool(thread_pool, n_threads);
 
-   int imol = 0; // dummy
-   last_restraints->make_restraints(imol, geom, flags, 1, make_trans_peptide_restraints,
+   last_restraints->make_restraints(imol_no, geom, flags, 1, make_trans_peptide_restraints,
                                     1.0, do_rama_plot_restraints, true, true, false, pseudos);
 
    if (last_restraints->size() == 0) {
@@ -4417,3 +4442,16 @@ coot::molecule_t::print_secondary_structure_info() const {
    }
 
 }
+
+#ifdef MAKE_ENHANCED_LIGAND_TOOLS
+//! if the ligand cid specifies more than one residue, only the first is returned.
+//! @return nullptr on error or failure to specify a ligand.
+RDKit::ROMol *
+coot::molecule_t::rdkit_mol(const std::string &ligand_cid) {
+
+   RDKit::ROMol *mol = nullptr;
+   mmdb::Residue *residue_p = cid_to_residue(ligand_cid);
+   return mol;
+}
+#endif
+

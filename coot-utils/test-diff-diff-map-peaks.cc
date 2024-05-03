@@ -1,3 +1,28 @@
+/*
+ * coot-utils/test-diff-diff-map-peaks.cc
+ *
+ * Copyright 2023 by Medical Research Council
+ * Author: Paul Emsley
+ *
+ * This file is part of Coot
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copies of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
+ * See http://www.gnu.org/licenses/
+ *
+ */
 
 #include "diff-diff-map-peaks.hh"
 #include "clipper/ccp4/ccp4_map_io.h"
@@ -28,9 +53,8 @@ int main(int argc, char **argv) {
 
       clipper::Coord_orth screen_centre(10,11,12);
       float base_level = 0.2; //
-      float radius = 20;
       std::vector<std::pair<clipper::Coord_orth, float> > map_peaks =
-         coot::diff_diff_map_peaks(m1, m2, base_level, screen_centre, radius);
+         coot::diff_diff_map_peaks(m1, m2, base_level);
 
       std::cout << "Found " << map_peaks.size() << " peaks" << std::endl;
       for (size_t i = 0; i < map_peaks.size(); i++) {

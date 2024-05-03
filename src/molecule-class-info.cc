@@ -6,19 +6,19 @@
  * Copyright 2013, 2014, 2015, 2016 by Medical Research Council
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
  */
 
 #ifdef USE_PYTHON
@@ -523,7 +523,7 @@ molecule_class_info_t::handle_read_draw_molecule(int imol_no_in,
          //
          if (bonds_box_type == coot::UNSET_TYPE)
             bonds_box_type = coot::NORMAL_BONDS;
-         std::cout << "debug:: ---- handle_read_draw_molecule() calls make_bonds_type_checked()" << std::endl;
+         // std::cout << "debug:: ---- handle_read_draw_molecule() calls make_bonds_type_checked()" << std::endl;
          make_bonds_type_checked(__FUNCTION__);
       }
 
@@ -2077,10 +2077,8 @@ molecule_class_info_t::update_mol_in_display_control_widget() const {
 //              << *imol_no_ptr << std::endl;
    std::string dmn = name_for_display_manager();
 
-   if (g.display_control_window())
-      update_name_in_display_control_molecule_combo_box(g.display_control_window(),
-                                                        dmn.c_str(),
-                                                        imol_no);
+   update_name_in_display_control_molecule_combo_box(imol_no, dmn.c_str()); // because it's in gtk-manual.h - Fix later.
+                                                              // note that display_control_map_combo_box() uses a string
 }
 
 void
@@ -4334,6 +4332,8 @@ void molecule_class_info_t::make_glsl_bonds_type_checked(const char *caller) {
    if (false)
       std::cout << "debug:: ---- in make_glsl_bonds_type_checked() --- start ---" << std::endl;
 
+   // Add no-graphics protection
+   if (!graphics_info_t::use_graphics_interface_flag) return;
 
    GLenum err = glGetError();
    if (err) std::cout << "GL ERROR:: in make_glsl_bonds_type_checked() -- start A --\n";
@@ -6775,42 +6775,43 @@ molecule_class_info_t::close_yourself() {
    // delete from display manager combo box
    //
    graphics_info_t g;
-   GtkWidget *display_control_window = widget_from_builder("display_control_window_glade");
-   if (display_control_window) {
-      if (was_map) {
-         GtkWidget *map_vbox = widget_from_builder("display_map_vbox");
-         if (GTK_IS_BOX(map_vbox)) {
-            GtkWidget *item_widget = gtk_widget_get_first_child(map_vbox);
-            while (item_widget) {
-               GtkWidget *next_item = gtk_widget_get_next_sibling(item_widget);
-               int imol_this = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(item_widget), "imol"));
-               if (imol_this == imol_no) {
-                  gtk_box_remove(GTK_BOX(map_vbox), item_widget);
-               }
-               item_widget = next_item;
-            };
+   if (g.use_graphics_interface_flag) {
+      GtkWidget *display_control_window = widget_from_builder("display_control_window_glade");
+      if (display_control_window) {
+         if (was_map) {
+            GtkWidget *map_vbox = widget_from_builder("display_map_vbox");
+            if (GTK_IS_BOX(map_vbox)) {
+               GtkWidget *item_widget = gtk_widget_get_first_child(map_vbox);
+               while (item_widget) {
+                  GtkWidget *next_item = gtk_widget_get_next_sibling(item_widget);
+                  int imol_this = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(item_widget), "imol"));
+                  if (imol_this == imol_no) {
+                     gtk_box_remove(GTK_BOX(map_vbox), item_widget);
+                  }
+                  item_widget = next_item;
+               };
+            }
+         }
+
+         if (was_coords) {
+            GtkWidget *coords_vbox = widget_from_builder("display_molecule_vbox");
+            if (GTK_IS_BOX(coords_vbox)) {
+               std::cout << "in close_yourself() fix container B foreach" << std::endl;
+
+               GtkWidget *item_widget = gtk_widget_get_first_child(coords_vbox);
+               while (item_widget) {
+                  GtkWidget *next_item = gtk_widget_get_next_sibling(item_widget);
+                  int imol_this = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(item_widget), "imol"));
+                  if (imol_this == imol_no) {
+                     gtk_box_remove(GTK_BOX(coords_vbox), item_widget);
+                  }
+                  item_widget = next_item;
+               };
+            }
          }
       }
-
-      if (was_coords) {
-         GtkWidget *coords_vbox = widget_from_builder("display_molecule_vbox");
-         if (GTK_IS_BOX(coords_vbox)) {
-            std::cout << "in close_yourself() fix container B foreach" << std::endl;
-
-            GtkWidget *item_widget = gtk_widget_get_first_child(coords_vbox);
-            while (item_widget) {
-               GtkWidget *next_item = gtk_widget_get_next_sibling(item_widget);
-               int imol_this = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(item_widget), "imol"));
-               if (imol_this == imol_no) {
-                  gtk_box_remove(GTK_BOX(coords_vbox), item_widget);
-               }
-               item_widget = next_item;
-            };
-         }
-      }
+      graphics_info_t::refresh_validation_graph_model_list();
    }
-
-   graphics_info_t::refresh_validation_graph_model_list();
 
    if (was_coords) {
       atom_sel.mol->DeleteSelection(atom_sel.SelectionHandle);
@@ -8763,7 +8764,7 @@ molecule_class_info_t::get_standard_residue_instance(const std::string &residue_
 
      if (nSelResidues != 1) {
        std::cout << "This should never happen - ";
-       std::cout << "badness in get_standard_residue_instance, we selected " << nSelResidues
+       std::cout << "badness in mci::get_standard_residue_instance(), we selected " << nSelResidues
                  << " residues looking for residues of type :" << residue_type << ":\n";
      } else {
        bool embed_in_chain_flag = true; // I think. Is this the one time where we *do* want embedding?
@@ -9930,7 +9931,6 @@ molecule_class_info_t::set_coot_save_index(const std::string &filename) {
 void
 molecule_class_info_t::transform_by(mmdb::mat44 mat) {
 
-#ifdef HAVE_GSL
    if (has_model()) {
       clipper::Coord_orth co;
       clipper::Coord_orth trans_pos;
@@ -9964,7 +9964,7 @@ molecule_class_info_t::transform_by(mmdb::mat44 mat) {
       have_unsaved_changes_flag = 1;
       make_bonds_type_checked(__FUNCTION__);
    }
-#endif // HAVE_GSL
+
 }
 
 

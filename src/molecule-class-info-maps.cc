@@ -8,19 +8,19 @@
  * Author: Paul Emsley
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
  */
 
 #ifdef USE_PYTHON
@@ -1498,6 +1498,12 @@ molecule_class_info_t::map_fill_from_mtz_with_reso_limits(std::string mtz_file_n
 							  float map_sampling_rate,
                                                           bool updating_existing_map_flag) {
 
+   bool debug = false;
+
+   if (debug) {
+      std::cout << "mci::map_fill_from_mtz_with_reso_limits() " << mtz_file_name << " " << f_col << " " << phi_col << std::endl;
+   }
+
    graphics_info_t g;
 
    // save for potential phase recombination in refmac later
@@ -1551,6 +1557,12 @@ molecule_class_info_t::map_fill_from_mtz_with_reso_limits(std::string mtz_file_n
 
    // If use weights, use both strings, else just use the first
    std::pair<std::string, std::string> p = make_import_datanames(f_col, phi_col, weight_col, use_weights);
+
+   if (debug) {
+      std::cout << "::::::::::::::::::::::::: dataname: " << std::endl;
+      std::cout << "       " << p.first << std::endl;
+      std::cout << "       " << p.second << std::endl;
+   }
 
    if (p.first.length() == 0) { // mechanism to signal an error
       std::cout << "ERROR:: fill_map.. - There was a column label error.\n";
@@ -2478,7 +2490,8 @@ molecule_class_info_t::install_new_map(const clipper::Xmap<float> &map_in, std::
    initialize_map_things_on_read_molecule(name_in, false, false, false); // not a diff_map
 
    bool ipz = graphics_info_t::ignore_pseudo_zeros_for_map_stats;
-   mean_and_variance<float> mv = map_density_distribution(xmap, 40, true, ipz);
+   bool write_output_flag = false;
+   mean_and_variance<float> mv = map_density_distribution(xmap, 40, write_output_flag, ipz);
 
    float mean = mv.mean;
    float var = mv.variance;
@@ -3635,16 +3648,11 @@ molecule_class_info_t::density_at_point(const clipper::Coord_orth &co) const {
       return -1000.0;
    } else {
 
-#ifdef HAVE_GSL
       float dv;
       clipper::Coord_frac af = co.coord_frac(xmap.cell());
       clipper::Coord_map  am = af.coord_map(xmap.grid_sampling());
       clipper::Interp_linear::interp(xmap, am, dv);
       return dv;
-#else
-      printf("no GSL so no density at point - remake \n");
-      return -1000.0;
-#endif // HAVE_GSL
    }
 }
 // Return status, was the contour level changed?  In that way, we

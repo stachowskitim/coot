@@ -6,19 +6,19 @@
  * Copyright 2015, 2016 by Medical Research Council
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
  */
 
 
@@ -274,13 +274,54 @@ on_model_toolbar_side_chain_180_button_clicked(GtkButton *button,
 
 extern "C" G_MODULE_EXPORT
 void
-on_model_toolbar_mutate_and_autofit_menubutton_activate
-                                        (GtkMenuButton *menubutton,
-                                        gpointer         user_data) {
+on_model_toolbar_mutate_and_autofit_menubutton_activate(GtkMenuButton *menubutton,
+                                                        gpointer       user_data) {
 
    // this function seems not to be called on menu button click. Hmmm.
    std::cout << "on_model_toolbar_mutate_and_autofit_menubutton_active "
              << " select the right menu for mutate_and_autofit_menubutton here" << std::endl;
+}
+
+
+extern "C" G_MODULE_EXPORT
+void
+on_simple_mutate_menubutton_activate(GtkMenuButton *menubutton,
+                                     gpointer       user_data) {
+
+   // "activate" happens when the popover menu is shown. That is not what we want.
+
+   std::cout << "on_simple_mutate_menubutton_activate "
+             << " select the right menu for mutate_and_autofit_menubutton here" << std::endl;
+}
+
+#include "setup-gui-components.hh"
+
+// try again with just a button
+
+extern "C" G_MODULE_EXPORT
+void
+on_simple_mutate_button_clicked(GtkButton *button,
+                                gpointer   user_data) {
+
+   GtkWidget *menu_button = widget_from_builder("simple_mutate_menubutton");
+   if (menu_button) {
+      graphics_info_t g;
+      auto active_atom = g.get_active_atom();
+      int imol = active_atom.first;
+      if (is_valid_model_molecule(imol)) {
+         gtk_widget_set_visible(menu_button, TRUE);
+         mmdb::Atom *atom = active_atom.second;
+         mmdb::Residue *residue_p = atom->residue;
+         if (residue_p) {
+            if (coot::util::is_nucleotide_by_dict(residue_p, *g.Geom_p())) {
+               add_typed_menu_to_mutate_menubutton("SIMPLE", "NUCLEIC-ACID");
+            } else {
+               add_typed_menu_to_mutate_menubutton("SIMPLE", "PROTEIN");
+            }
+            g_signal_emit_by_name(menu_button, "activate", NULL);
+         }
+      }
+   }
 }
 
 
@@ -292,18 +333,21 @@ on_model_toolbar_add_terminal_residue_button_clicked(GtkButton *button,
    graphics_info_t g;
    auto active_atom = g.get_active_atom();
    int imol = active_atom.first;
-   std::cout << "on_model_toolbar_add_terminal_residue_button_clicked 1" << std::endl;
    if (is_valid_model_molecule(imol)) {
-      std::cout << "on_model_toolbar_add_terminal_residue_button_clicked 2" << std::endl;
       mmdb::Residue *residue_p = active_atom.second->residue;
       coot::atom_spec_t atom_spec(active_atom.second);
       std::string chain_id = atom_spec.chain_id;
-      coot::residue_spec_t residue_spec(atom_spec);
-      std::string new_type = "ALA";
       mmdb::Atom *atom = active_atom.second;
       std::string terminus_type = g.molecules[imol].get_term_type(atom);
-      g.execute_add_terminal_residue(imol, terminus_type, residue_p,
-                                     chain_id, new_type, true);
+
+      if (coot::util::is_nucleotide_by_dict_dynamic_add(residue_p, g.Geom_p())) {
+         std::cout << "add nucleotide" << std::endl;
+         g.execute_simple_nucleotide_addition(imol, terminus_type, residue_p, chain_id);
+      } else {
+         coot::residue_spec_t residue_spec(atom_spec);
+         std::string new_type = "ALA";
+         g.execute_add_terminal_residue(imol, terminus_type, residue_p, chain_id, new_type, true);
+      }
    }
 
 }

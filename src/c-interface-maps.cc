@@ -5,17 +5,17 @@
  * Copyright 2014, 2015 by Medical Research Council
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
  * Foundation, Inc.,  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
@@ -729,10 +729,10 @@ std::vector<int> auto_read_make_and_draw_maps_from_mtz(const std::string &mtz_fi
       std::string r_free_col;
       short int hrp = false; // have refmac params
 
-      std::cout << "*************************************** " << mtz_col_types.sigf_cols.size() << std::endl;
-
       // is there Fobs data in that mtz file?
       // c.f. block in auto_read_mtz() in api/molecules_container.cc
+
+      // std::cout << "debug:: in read_mtz_local() f: \"" << f << "\" phi: \"" << phi << "\"" << std::endl;
 
       for (unsigned int i=0; i<mtz_col_types.f_cols.size(); i++) {
          const std::string &f = mtz_col_types.f_cols[i].column_label;
@@ -754,8 +754,8 @@ std::vector<int> auto_read_make_and_draw_maps_from_mtz(const std::string &mtz_fi
          }
       }
 
-      std::cout << "fobs and sig_fobs_col and r_free_cols " << fobs_col << " " << sig_fobs_col << " " << r_free_col
-                << std::endl;
+      // std::cout << "debug:: in read_mtz_local() fobs and sig_fobs_col and r_free_cols "
+      //           << fobs_col << " " << sig_fobs_col << " " << r_free_col << std::endl;
 
       int imol = make_and_draw_map_with_reso_with_refmac_params(mtz_file_name.c_str(),
                                                                 f.c_str(),
@@ -2011,7 +2011,7 @@ case we overwrite the imol_map and we also presume that the
 grid sampling of the contributing maps match. This makes it
 much faster to generate than an average map.
 */
-void regen_map(int imol_map, PyObject *map_number_and_scales) {
+void regen_map_py(int imol_map, PyObject *map_number_and_scales) {
 
    auto pyobject_to_map_index_and_scale_vec = [] (PyObject *map_number_and_scales) {
       std::vector<std::pair<int, float> > map_indices_and_scales_vec;
@@ -2069,6 +2069,38 @@ void regen_map(int imol_map, PyObject *map_number_and_scales) {
 }
 #endif
 
+/*! \brief
+We overwrite the imol_map and we also presume that the
+grid sampling of the contributing maps match. This makes it
+much faster to generate than an average map.
+*/
+void regen_map_internal(int imol_map, const std::vector<std::pair<int, float> > &weighted_map_indices) {
+
+   if (!weighted_map_indices.empty()) {
+      graphics_info_t g;
+      std::vector<std::pair<clipper::Xmap<float> *, float> > maps_and_scales_vec;
+      for (unsigned int i=0; i<weighted_map_indices.size(); i++) {
+         int idx = weighted_map_indices[i].first;
+         float w = weighted_map_indices[i].second;
+         std::pair<clipper::Xmap<float> *, float> p(&g.molecules[idx].xmap, w);
+         maps_and_scales_vec.push_back(p);
+      }
+      coot::util::regen_weighted_map(&g.molecules[imol_map].xmap, maps_and_scales_vec);
+   }
+}
+
+int make_weighted_map_simple_internal(const std::vector<std::pair<int, float> > &weighted_map_indices) {
+
+   int imol = -1;
+
+   if (!weighted_map_indices.empty()) {
+      int imol_first = weighted_map_indices[0].first;
+      imol = copy_molecule(imol_first);
+      regen_map_internal(imol, weighted_map_indices);
+   }
+   return imol;
+}
+
 #ifdef USE_PYTHON
 PyObject *positron_pathway(PyObject *map_molecule_list_py, PyObject *pathway_points_py) {
 
@@ -2098,14 +2130,14 @@ PyObject *positron_pathway(PyObject *map_molecule_list_py, PyObject *pathway_poi
             // imol = average_map_py(o);  // cubic interpolation
             int imol_first = map_index_vec[0];
             imol = copy_molecule(imol_first);
-            // regen_map needs a C++ api (regen_map_internal, maybe)
-            regen_map(imol, o);
+            // Use the new regen_map_internal()
+            regen_map_py(imol, o);
          }
       }
       return imol;
    };
 
-   float default_contour_level = 0.01;
+   float default_contour_level = 0.02;
 
    std::vector<int> new_map_index_list;
    if (PyList_Check(map_molecule_list_py)) {
@@ -2147,6 +2179,7 @@ PyObject *positron_pathway(PyObject *map_molecule_list_py, PyObject *pathway_poi
    return new_map_index_list_py;
 }
 #endif
+
 
 
 /*  ----------------------------------------------------------------------- */

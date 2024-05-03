@@ -1,3 +1,28 @@
+/*
+ * api/molecules-container.cc
+ *
+ * Copyright 2020, 2021, 2-22 by Medical Research Council
+ * Author: Paul Emsley
+ *
+ * This file is part of Coot
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copies of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
+ * See http://www.gnu.org/licenses/
+ *
+ */
 
 #include <iomanip>
 
@@ -168,6 +193,16 @@ molecules_container_t::get_molecule_name(int imol) const {
       if (imol >= 0)
          return molecules[imol].get_name();
    return std::string("");
+}
+
+//! set the molecule name
+void
+molecules_container_t::set_molecule_name(int imol, const std::string &new_name) {
+
+   if (is_valid_map_molecule(imol))
+      molecules[imol].set_molecule_name(new_name);
+   if (is_valid_model_molecule(imol))
+      molecules[imol].set_molecule_name(new_name);
 }
 
 api::cell_t
@@ -5517,4 +5552,14 @@ molecules_container_t::print_secondary_structure_info(int imol) const {
    } else {
       std::cout << "WARNING:: " << __FUNCTION__ << "(): not a valid model molecule " << imol << std::endl;
    }
+}
+
+
+//! copy the dictionary that is specific for imol_current so that it can be used with imol_new
+bool
+molecules_container_t::copy_dictionary(const std::string &monomer_name, int imol_current, int imol_new) {
+
+   bool status = geom.copy_monomer_restraints(monomer_name, imol_current, imol_new);
+   return status;
+
 }

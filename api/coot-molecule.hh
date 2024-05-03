@@ -1,9 +1,36 @@
+/*
+ * api/coot-molecule.hh
+ * 
+ * Copyright 2020 by Medical Research Council
+ * Author: Paul Emsley
+ *
+ * This file is part of Coot
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copies of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
+ * See http://www.gnu.org/licenses/
+ *
+ */
+
 #ifndef COOT_MOLECULE_HH
 #define COOT_MOLECULE_HH
 
 #include <utility>
 #include <atomic>
 #include <array>
+
 
 #include "compat/coot-sysdep.h"
 
@@ -13,6 +40,7 @@
 #include "coot-utils/coot-rama.hh"
 #include "coot-utils/sfcalc-genmap.hh"
 #include "coot-utils/atom-tree.hh"
+#include "coot-utils/texture-as-floats.hh"
 #include "geometry/residue-and-atom-specs.hh"
 #include "coords/Cartesian.h"
 #include "coords/Bond_lines.h"
@@ -20,6 +48,10 @@
 #include "ideal/extra-restraints.hh"
 #include "coot-utils/simple-mesh.hh"
 #include "ghost-molecule-display.hh"
+
+#ifdef MAKE_ENHANCED_LIGAND_TOOLS
+#include "lidia-core/rdkit-interface.hh"
+#endif
 
 #include "density-contour/CIsoSurface.h"
 #include "gensurf.hh"
@@ -516,6 +548,7 @@ namespace coot {
       void replace_molecule_by_model_from_file(const std::string &pdb_file_name);
 
       std::string get_name() const { return name; }
+      void set_molecule_name(const std::string &n) { name = n; };
       int get_molecule_index() const { return imol_no; }
       // void set_molecule_index(int idx) { imol_no = idx; } // 20221011-PE needed?
       bool is_valid_model_molecule() const;
@@ -797,6 +830,12 @@ namespace coot {
       //! not const because it can dynamically add dictionaries
       coot::atom_overlaps_dots_container_t get_overlap_dots_for_ligand(const std::string &cid_ligand,
                                                                        protein_geometry *geom_p);
+
+#ifdef MAKE_ENHANCED_LIGAND_TOOLS
+      //! if the ligand cid specifies more than one residue, only the first is returned.
+      //! @return nullptr on error or failure to specify a ligand.
+      RDKit::ROMol *rdkit_mol(const std::string &ligand_cid);
+#endif
 
       // ------------------------ model-changing functions
 
@@ -1238,6 +1277,13 @@ namespace coot {
       // the molecule is passed so that the peaks are placed around the protein
       std::vector<interesting_place_t> difference_map_peaks(mmdb::Manager *mol, float n_rmsd) const;
 
+      texture_as_floats_t get_map_section_texture(int section_index, int axis,
+                                                  float data_value_for_bottom, float data_value_for_top) const;
+
+      //! @return the number of section in the map along the give axis.
+      //! (0 for X-axis, 1 for y-axis, 2 for Z-axis).
+      //! return -1 on failure.
+      int get_number_of_map_sections(int axis_id) const;
 
       // ---------------------------------- blender --------------------------------------
 

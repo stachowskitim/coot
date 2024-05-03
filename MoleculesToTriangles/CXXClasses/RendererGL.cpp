@@ -4,9 +4,11 @@
  * Copyright 2009 by Martin Noble, University of Oxford
  * Author: Martin Noble
  *
+ * This file is part of Coot
+ *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
@@ -170,18 +172,6 @@ std::shared_ptr<Renderer> RendererGL::create()
     return std::shared_ptr<Renderer>(new RendererGL());
 }
 
-
-
-#define RendererType RendererGL
-
-/*
- *  RendererImplementations.h
- *  AesopCD
- *
- *  Created by Martin Noble on 08/11/2010.
- *  Copyright 2010 __MyCompanyName__. All rights reserved.
- *
- */
 
 void RendererType::setupCamera(Camera *camera){
 #ifdef DEBUG_MINE

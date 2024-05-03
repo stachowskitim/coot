@@ -5,19 +5,19 @@
  * Copyright 2014, 2015, 2016 by Medical Research Council
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
  */
 
 
@@ -2200,8 +2200,6 @@ graphics_info_t::clear_up_moving_atoms() {
                             // OK, so let the test be on moving_atoms_asc->mol
                             // moving_atoms_asc is set in init()
 
-#ifdef HAVE_GSL
-
    if (last_restraints) {
       last_restraints->clear();
       delete last_restraints;
@@ -2210,9 +2208,6 @@ graphics_info_t::clear_up_moving_atoms() {
    }
 
    release_restraints_lock(__FUNCTION__); // refinement ended and cleared up.
-
-#endif // HAVE_GSL
-
 
    moving_atoms_lock  = false;
 
@@ -3261,6 +3256,22 @@ graphics_info_t::graphics_object_internal_pentakis_dodec(const coot::generic_dis
    glPopMatrix();
 }
 #endif
+
+// static
+void
+graphics_info_t::from_generic_object_remove_last_item(int object_number) {
+
+   if (! use_graphics_interface_flag) return;
+
+   int ngos = generic_display_objects.size();
+   if (object_number >= 0) {
+      if (object_number < ngos) {
+         generic_display_objects[object_number].remove_last_object();
+      }
+   }
+   graphics_draw();
+}
+
 
 
 void
@@ -6617,7 +6628,7 @@ graphics_info_t::sfcalc_genmap(int imol_model,
 void
 graphics_info_t::delete_pointers_to_map_in_other_molecules(int imol_map) {
 
-   std::cout << "---------------------------------------- delete_pointers_to_map_in_other_molecules " << imol_map << std::endl;
+   // std::cout << "---------------------------------------- delete_pointers_to_map_in_other_molecules " << imol_map << std::endl;
 
    if (is_valid_map_molecule(imol_map)) { // it is at the moment, not for long though!
       clipper::Xmap<float> *xmap_p = &molecules[imol_map].xmap;

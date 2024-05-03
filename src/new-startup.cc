@@ -1,3 +1,28 @@
+/*
+ * src/new-startup.cc
+ *
+ * Copyright 2022 by Medical Research Council
+ * Author: Paul Emsley
+ *
+ * This file is part of Coot
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copies of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
+ * See http://www.gnu.org/licenses/
+ *
+ */
 
 #include <iostream>
 #include <string>
@@ -375,21 +400,18 @@ on_glarea_scrolled(GtkEventControllerScroll *controller,
 }
 
 void
-on_glarea_swipe(GtkEventControllerScroll *controller,
-                double                    dx,
-                double                    dy,
-                gpointer                  user_data) {
+on_glarea_swipe(GtkGestureSwipe *controller,
+                double           vel_x,
+                double           vel_y,
+                gpointer         user_data) {
 
    graphics_info_t g;
    // swipes happend a lot - a click-and-drag seems to be a swipe
-   // std::cout << "------------------ swipe " << dx << " " << dy << std::endl;
 
-   GtkGestureSwipe *swipe_gesture; // how to get this?
-   double vel_x;
-   double vel_y;
-   // gboolean state = gtk_gesture_get_velocity(swipe_gesture, &vel_x, &vel_y);
+   // std::cout << "------------------ swipe " << vel_x << " " << vel_y << std::endl;
 
-   g.using_trackpad = true;
+   // 20240414-PE no, because click-drag-release is a swipe.
+   // g.using_trackpad = true;
 
 }
 

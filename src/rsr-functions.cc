@@ -1,3 +1,28 @@
+/*
+ * src/rsr-functions.cc
+ *
+ * Copyright 2022 by Medical Research Council
+ * Author: Paul Emsley
+ *
+ * This file is part of Coot
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copies of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
+ * See http://www.gnu.org/licenses/
+ *
+ */
 
 #include "graphics-info.h"
 #include "rsr-functions.hh"
@@ -256,10 +281,10 @@ void rsr_refine_all_atoms() {
 
          // add a fix for all chains - needs reworking.
 
-         mmdb::Chain *chain_p = at->residue->chain;
+         mmdb::Manager *mol = g.molecules[imol].atom_sel.mol;
          std::string alt_conf = at->altLoc;
          coot::residue_spec_t rspec(atom_spec);
-         std::vector<mmdb::Residue *> residues = coot::util::residues_in_chain(chain_p);
+         std::vector<mmdb::Residue *> residues = coot::util::residues_in_molecule(mol);
          std::vector<coot::residue_spec_t> v;
          for (unsigned int i=0; i<residues.size(); i++) {
             coot::residue_spec_t spec(residues[i]);

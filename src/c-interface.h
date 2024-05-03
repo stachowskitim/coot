@@ -6,19 +6,19 @@
  * Copyright 2014, 2015, 2016 by Medical Research Council
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
  */
 
 /* svn $Id: c-interface.h 1458 2007-01-26 20:20:18Z emsley $ */
@@ -618,6 +618,14 @@ int reset_view();
 
 /*! \brief return the number of molecules (coordinates molecules and
   map molecules combined) that are currently in coot
+
+  @return the number of molecules (closed molecules are not counted) */
+int get_number_of_molecules();
+
+/*! \brief As above, return the number of molecules (coordinates molecules and
+  map molecules combined) that are currently in coot.
+
+  This is the old name for the function.
 
   @return the number of molecules (closed molecules are not counted) */
 int graphics_n_molecules();
@@ -1351,7 +1359,7 @@ case we overwrite the imol_map and we also presume that the
 grid sampling of the contributing maps match. This makes it
 much faster to generate than an average map.
 */
-void regen_map(int imol_map, PyObject *map_number_and_scales);
+void regen_map_py(int imol_map, PyObject *map_number_and_scales);
 #endif /* USE_PYTHON */
 #endif /* c++ */
 

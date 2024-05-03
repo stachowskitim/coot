@@ -6,19 +6,19 @@
  * Copyright 2014, 2015, 2016 by Medical Research Council
  * 
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  * 
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
  */
 
 #include <string.h>
@@ -545,7 +545,7 @@ coot::protein_geometry::try_dynamic_add(const std::string &resname, int read_num
    //
    if (is_non_auto_load_ligand(resname)) {
       std::cout << "INFO:: comp-id: " << resname
-		<< " is marked for non-autoloading - stopping now "
+		<< " is marked for non-autoloading - stopping dynamic_add() now "
 		<< std::endl;
       return success;
    }
@@ -1495,6 +1495,22 @@ coot::protein_geometry::get_monomer_name(const std::string &comp_id, int imol_en
 } 
 
 
+
+bool
+coot::protein_geometry::copy_monomer_restraints(const std::string &monomer_type, int imol_enc_current, int imol_enc_new) {
+
+   bool status = false;
+   std::pair<bool, coot::dictionary_residue_restraints_t> r =
+      get_monomer_restraints_internal(monomer_type, imol_enc_current, false);
+
+   if (r.first) {
+      status = true;
+      dict_res_restraints.push_back(std::make_pair(imol_enc_new, r.second));
+   }
+
+   return status;
+
+}
 
 
 // Try comparing vs the comp_id first, if that fails compare the

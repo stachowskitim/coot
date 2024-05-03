@@ -5,19 +5,19 @@
  * Author: Paul Emsley
  * 
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or (at
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
  * 
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * You should have received a copy of the GNU General Public License and
+ * the GNU Lesser General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA, 02110-1301, USA.
  */
 
 #include <string>
@@ -101,6 +101,8 @@ void to_generic_object_add_point_internal(int object_number,
 				 const clipper::Coord_orth &pt);
 #endif // SWIG
 
+void from_generic_object_remove_last_item(int object_number);
+
 /*! \brief add point to generic object object_number */
 void to_generic_object_add_arc(int object_number, 
 			       const char *colour,
@@ -154,6 +156,9 @@ void to_generic_object_add_pentakis_dodecahedron(int object_number,
 						 float y,
 						 float z);
 
+#ifdef USE_PYTHON
+void to_generic_object_add_mesh(int object_number, PyObject *mesh_py);
+#endif
 
 /*! \brief add a display list handle generic object */
 void to_generic_object_add_display_list_handle(int object_number, int display_list_id); 
@@ -199,6 +204,11 @@ int number_of_generic_objects();
 /*! \brief print to the console the name and display status of the
   generic display objects */
 void generic_object_info(); 
+
+#ifdef USE_PYTHON
+/*! \brief get generic display objects */
+PyObject *get_generic_object_info(int obj_number);
+#endif /* USE_PYTHON */
 
 /*! \brief does generic display object number obj_no have things to
   display? (predicate name)
