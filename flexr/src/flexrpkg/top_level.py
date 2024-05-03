@@ -82,7 +82,10 @@ def check_library():
         library = pd.read_csv(libraryloc,header=0)
         chi_labels = ['chi1_mean','chi2_mean','chi3_mean','chi4_mean']
         for i in chi_labels:
-            library[i] = library[i].apply(lambda x : x+360 if x<0 else x)
+            #library[i] = library[i].apply(lambda x : x+360 if x<0 else x)
+            #library[i] = library[i].apply(lambda x : x+360 if x<0 else 360-x)
+            library[i] = library[i].apply(lambda x : x % 360)
+            library[i] = library[i].astype(float)
         return library
     except FileNotFoundError:
         print('Cannot find library.')

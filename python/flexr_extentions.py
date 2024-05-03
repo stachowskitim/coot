@@ -21,7 +21,7 @@ def add_module_flexr():
     add_simple_action_to_menu(
     menu, "Open","run_flexr_gui",lambda _simple_action, _arg: add_flexr_gui())
 
-def run_flexr(imol,mol,imap,mtz,ringerfile,branching,densitythreshold,singleconf,ringerplots,altlimit):
+def run_flexr(imol,mol,imap,mtz,ringerfile,branching,densitythreshold,singleconf,ringerplots,altlimit,densityfilter,clashfilter):
 
     from flexr import main
     from src.building import flexr_build
@@ -56,7 +56,7 @@ def run_flexr(imol,mol,imap,mtz,ringerfile,branching,densitythreshold,singleconf
             map_coef = mol.split()[0][:-4]+"_map_coeffs.mtz"
             print(map_coef)
 
-            os.system('mmtbx.ringer %s %s' % (mol,map_coef))
+            os.system('mmtbx.ringer %s %s sampling_angle=2' % (mol,map_coef))
             ringerfile = mol.split('/')[-1][:-4]+"_ringer.csv"
             ARGS.filename = ringerfile
             altsfile = ringerfile[:-4]+"_"+str(densitythreshold)+"_alts.csv"
@@ -79,6 +79,9 @@ def run_flexr(imol,mol,imap,mtz,ringerfile,branching,densitythreshold,singleconf
     ARGS.branching = branching
     ARGS.singleconfs = singleconf
     ARGS.plot = ringerplots
+    ARGS.step = 2
+    ARGS.clashscore = clashfilter
+    ARGS.densityscore = densityfilter
 
     # these opts so we can call the build function instead of running the script.
     ARGS.pdb = 'None'
@@ -88,7 +91,7 @@ def run_flexr(imol,mol,imap,mtz,ringerfile,branching,densitythreshold,singleconf
     main(ARGS)
 
     # run the building step
-    flexrmolnum = flexr_build.building_run(altsfile,ARGS.pdb,ARGS.branching,ARGS.cootmolnum,ARGS.exitcoot)
+    flexrmolnum = flexr_build.building_run(altsfile,ARGS.pdb,ARGS.branching,ARGS.cootmolnum,ARGS.exitcoot,ARGS.clashscore,ARGS.densityscore)
     #try:
     flexr_analysis.output_summaries(altsfile,imol,flexrmolnum)
     #except:
@@ -176,6 +179,18 @@ def add_flexr_gui():
         n = bool(at)
         return n
 
+    #filtering options
+    def get_filter_ops():
+        if clashcheck_button.get_active():
+            clashfilter = True
+        else:
+            clashfilter = False
+        if densitycheck_button.get_active():
+            densityfilter = True
+        else:
+            densityfilter = False
+        return clashfilter,densityfilter
+
     def apply_cb(*args):
         imol,mol = get_molecule()
         imap,mtz = get_mtz()
@@ -185,8 +200,9 @@ def add_flexr_gui():
         branching = get_getbranching()
         singleconf = get_singleconf()
         ringerplots = get_ringerplots()
+        clashfilter,densityfilter = get_filter_ops()
         if ringerpath:
-            run_flexr(imol,mol,imap,mtz,ringerpath,branching,densitythreshold,singleconf,ringerplots,altlimit)
+            run_flexr(imol,mol,imap,mtz,ringerpath,branching,densitythreshold,singleconf,ringerplots,altlimit,densityfilter,clashfilter)
             #print("now call update_water_results() with imol", imol, "coordination number", n, "imol", imol)
             #update_water_results(imol, n, d)
 
@@ -380,6 +396,73 @@ def add_flexr_gui():
     hbox_number_chooser3.append(number_text3)
     hbox_number_chooser3.append(combobox_coordination3)
     vbox.append(hbox_number_chooser3)
+
+    # Create places for drop down option
+    # coordination number combobox
+    number_text4 = Gtk.Label(label="Filter alts by clash?        ")
+    hbox_chooser4 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    hbox_chooser4.set_margin_start(6)
+    hbox_chooser4.set_margin_bottom(4)
+    hbox_chooser4.set_margin_top(4)
+    clashcheck_button_local = Gtk.CheckButton(label = "")
+    clashcheck_button = clashcheck_button_local
+    clashcheck_button.set_active(True)
+
+    vbox.append(hbox_chooser4)
+    hbox_chooser4.append(number_text4)
+    hbox_chooser4.append(clashcheck_button_local)
+
+
+    #
+    number_text5 = Gtk.Label(label="Filter alts by density?     ")
+    hbox_chooser5 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    hbox_chooser5.set_margin_start(6)
+    hbox_chooser5.set_margin_bottom(4)
+    hbox_chooser5.set_margin_top(4)
+
+    densitycheck_button_local = Gtk.CheckButton(label = "")
+    densitycheck_button = densitycheck_button_local
+    densitycheck_button.set_active(False)
+
+    vbox.append(hbox_chooser5)
+    hbox_chooser5.append(number_text5)
+    hbox_chooser5.append(densitycheck_button_local)
+
+    ## default values for text entry
+    #density_threshold = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    #density_threshold_label = Gtk.Label(label="Density threshold: ")
+    #dist_entry2 = Gtk.Entry()
+    #density_threshold.append(density_threshold_label)
+    #density_threshold.append(dist_entry2)
+    #density_threshold.set_margin_start(6)
+    #density_threshold.set_margin_end(6)
+    #density_threshold.set_margin_top(4)
+    #density_threshold.set_margin_bottom(4)
+    #vbox.append(density_threshold)
+    #dist_entry2.set_text("0.30")
+    ##dist_entry.set_width_chars(5)
+
+
+    #combobox_coordination4 = Gtk.ComboBoxText.new()
+    #radiobutton_yes = Gtk.ToggleButton(None,True)
+    #radiobutton_no = Gtk.ToggleButton(radiobutton_yes,False)
+    #radiobutton_yes.set_active(True)
+    #radiobutton_yes.show()
+    #radiobutton_no.show()
+    #combobox_coordination4.append(radiobutton_yes)
+    #combobox_coordination4.append(radiobutton_no)
+#
+    #combobox_coordination4.set_active(0)
+    #combobox_coordination4.set_margin_start(6)
+    #combobox_coordination4.set_margin_end(6)
+    #combobox_coordination4.set_margin_top(4)
+    #combobox_coordination4.set_margin_bottom(4)
+    #hbox_chooser4 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    #hbox_number_chooser4 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    #vbox.append(hbox_chooser4)
+    #hbox_number_chooser4.append(number_text4)
+    #hbox_number_chooser4.append(combobox_coordination4)
+    #vbox.append(hbox_number_chooser3)
 
     ## Place for 'Output 2'
     #scrolled_win = Gtk.ScrolledWindow()

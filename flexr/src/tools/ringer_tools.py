@@ -293,18 +293,41 @@ def match_and_build(alt,res,library_tmp,rotamer_geometry):
     conf = pd.DataFrame(conf.T)
     conf.columns = conf.iloc[0]
     conf = conf.drop(conf.index[0])
+    library_tmp = library_tmp.sort_values(by='frequency%',ascending=False)
     res_lib = library_tmp[conf.columns]
     match = np.isclose(conf.values.astype(float).astype(int),\
     res_lib.values.astype(int),atol=rotamer_geometry)
     matches = [x.all() for x in match]
     matches = [i for i, x in enumerate(matches) if x]
-    if len(matches) != 0:
-        ## if multiple matches to that combination of angles, take the most common one
-        rot_index = library_tmp.iloc[matches,:].sort_values(by='frequency%')
-        #print(matches,rot_index)
-        res2build = rot_index['rotamer'].values[0]
-        res2buildfreq = rot_index['frequency%'].values[0]
-        #print(res,res2build)
+    #print(res)
+    #print(conf)
+    #print(matches)
+    #print(library_tmp[['rotamer','chi1_mean']])
+    #print(library_tmp[['rotamer','chi1_mean']].values[matches])
+    ## if multiple matches to that combination of angles, take the most common one
+    if (len(matches) > 1): #& (('ARG' not in res) & ('LYS' not in res)):
+        #print('more than one...')
+        #print(matches)
+        #print(library_tmp['rotamer'].values[matches])
+        #print(res)
+        res2build = library_tmp['rotamer'].values[matches[0]]
+        res2buildfreq = library_tmp['frequency%'].values[matches[0]]
+
+    ## if multiple matches to that combination of angles, find the one with minimal difference.
+    #elif len(matches) > 1:
+    #    differences = []
+    #    for i in res_lib.values[matches]:
+    #        i = i.astype(float).astype(int)
+    #        diff = abs(np.subtract(conf.values.astype(float).astype(int),i)).sum()
+    #        differences.append(diff)
+    #    mindiff = differences.index(min(differences))
+    #    res2build = library_tmp['rotamer'].values[mindiff]
+    #    res2buildfreq = library_tmp['frequency%'].values[mindiff]
+
+    if len(matches) == 1:
+        res2build = library_tmp['rotamer'].values[matches[0]]
+        res2buildfreq = library_tmp['frequency%'].values[matches[0]]
+
     if len(matches) == 0:
         res2build = np.nan
         res2buildfreq = np.nan
@@ -393,8 +416,11 @@ def parse_peak_find(filename,sigmathreshold,plot,peakheight,peakprominence,peakw
     parsed,rot_angles = ringer_parser(filename,step)
     try:
         for chi in chis:
-            tmp = peak_find(filename,parsed,chi,sigmathreshold,plot,peakheight,peakprominence,peakwidth,peakdistance,rot_angles)
-            df = pd.concat([df,tmp])
+            try:
+                tmp = peak_find(filename,parsed,chi,sigmathreshold,plot,peakheight,peakprominence,peakwidth,peakdistance,rot_angles)
+                df = pd.concat([df,tmp])
+            except:
+                print(chi+' not found')
         df = df.sort_values(by=['chain','res_n','chi'])
         df = df.drop_duplicates(subset=['res','chi'])
         if '/' in filename:
@@ -427,7 +453,7 @@ def assemble_matches(df,library,rotamer_geometry):
     ## assign what residues will always have peaks at certain chi angles
     chi1_allowed = ['SER','ARG','LYS','MET','CYS']
     chi1_branched = ['THR','VAL']
-    chi2_branched = ['LEU','ASN','ASP']
+    chi2_branched = ['LEU','ASN','ASP','PHE','TYR','TRP','HIS']
     chi2_allowed = ['ILE']
     chi3_branched = ['GLU','GLN']
     rings = ['PHE','TYR','TRP','HIS']
@@ -447,105 +473,138 @@ def assemble_matches(df,library,rotamer_geometry):
             peakareas = [x[:] for x in np.array(peakareas)]
             peakareas = [[x for x in sublist] for sublist in peakareas]
 
-            if len(angles) > 1:
-                alts = list(product(*angles))
-                areas = list(product(*peakareas))
-            if len(angles) == 1:
-                alts = list(angles)
-                areas = list(peakareas)
-            if len(alts) > 0:
-                ## test which residues have certain number of peaks
-                ## based on branching vs unbrached vs ring
-                if res in chi1_allowed:
-                    if len(alts) > 1:
-                        for count,k in enumerate(alts):
-                            area = sum(areas[count])
-                            if len(k) > 1:
+            # if input ringer file only contains chi1
+            if len(df['chi'].drop_duplicates().values) == 1:
+                if len(angles) > 1:
+                    alts = list(product(*angles))
+                    areas = list(product(*peakareas))
+                if len(angles) == 1:
+                    alts = list(angles)
+                    areas = list(peakareas)
+                if (len(alts[0]) > 0) & (res not in chi1_branched):
+                    if len(alts) == 1:
+                        for count,k in enumerate(alts[0]):
+                            area = areas[0][count]
+                            k = [k]
+                            res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                            alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
+                if (len(alts[0]) > 2) & (res in chi1_branched):
+                    if len(alts) == 1:
+                        for count,k in enumerate(alts[0]):
+                            area = areas[0][count]
+                            k = [k]
+                            res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                            alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
+            else:
+                if len(angles) > 1:
+                    alts = list(product(*angles))
+                    areas = list(product(*peakareas))
+                if len(angles) == 1:
+                    alts = list(angles)
+                    areas = list(peakareas)
+                if len(alts) > 0:
+                    ## test which residues have certain number of peaks
+                    ## based on branching vs unbrached vs ring
+                    if res in chi1_allowed:
+                        if len(alts) > 1:
+                            for count,k in enumerate(alts):
+                                area = sum(areas[count])
+                                if len(k) > 1:
+                                    res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                                    alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
+                        elif (len(alts) == 1) & (restype not in ['SER', 'CYS']):
+                            for count,k in enumerate(alts):
+                                if len(k) > 1:
+                                    res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                                    alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
+                        # for serine that only has chi1
+                        elif (len(alts) == 1) & (restype in ['SER', 'CYS']):
+                            for count,k in enumerate(alts[0]):
+                                area = areas[0][count]
+                                k = [k]
                                 res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
                                 alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
-                    elif (len(alts) == 1) & (restype not in ['SER', 'CYS']):
-                        for count,k in enumerate(alts):
-                            if len(k) > 1:
+                    if res in chi1_branched:
+                        if len(alts[0]) > 2:
+                            for count,k in enumerate(alts[0]):
+                                area = areas[0][count]
+                                k = [k]
+                                res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                                alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
+                        elif len(alts[0]) == 2:
+                            if res == 'VAL':
+                                if alts[0][0] < 100:
+                                    k = [alts[0][1]]
+                                else:
+                                    k = [alts[0][0]]
                                 res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
                                 alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
-                    # for serine that only has chi1
-                    elif (len(alts) == 1) & (restype in ['SER', 'CYS']):
-                        for count,k in enumerate(alts[0]):
-                            area = areas[0][count]
-                            k = [k]
-                            res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
-                            alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
-                if res in chi1_branched:
-                    if len(alts[0]) > 2:
-                        for count,k in enumerate(alts[0]):
-                            area = areas[0][count]
-                            k = [k]
-                            res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
-                            alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
-                    elif len(alts[0]) == 2:
-                        if res == 'VAL':
-                            if alts[0][0] < 100:
-                                k = [alts[0][1]]
-                            else:
-                                k = [alts[0][0]]
+                            if res == 'THR':
+                                if alts[0][0] < 100:
+                                    k = [alts[0][0]]
+                                else:
+                                    k = [alts[0][1]]
+                                res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                                alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
+                    if res in chi2_branched:
+                        if (len(angles[0]) > 1) or (len(angles[1]) > 2):
+                            for count,k in enumerate(alts):
+                                area = sum(areas[count])
+                                if len(k) > 1:
+                                    res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                                    alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
+                        elif (len(angles[0]) == 1) and (len(angles[1]) == 2):
+                            k = alts[0]
                             res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
                             alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
-                        if res == 'THR':
-                            if alts[0][0] < 100:
-                                k = [alts[0][0]]
-                            else:
-                                k = [alts[0][1]]
+                    if res in chi2_allowed:
+                        if (len(angles[0]) > 2) or (len(angles[1]) > 1):
+                            for count,k in enumerate(alts):
+                                area = sum(areas[count])
+                                if len(k) > 1:
+                                    res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                                    alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
+                        elif (len(angles[0]) == 2) and (len(angles[1]) == 1):
+                            k = alts[1]
                             res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
                             alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
-                if res in chi2_branched:
-                    if (len(angles[0]) > 1) or (len(angles[1]) > 2):
-                        for count,k in enumerate(alts):
-                            area = sum(areas[count])
-                            if len(k) > 1:
+                    if res in chi3_branched:
+                        if len(angles) > 1:
+                            if (len(angles[0]) > 1) or (len(angles[1]) > 2) or (len(angles[1]) > 3):
+                                for count,k in enumerate(alts):
+                                    area = sum(areas[count])
+                                    if len(k) > 1:
+                                        res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                                        alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
+                            elif (len(angles[0]) == 1) and (len(angles[1]) == 1) and (len(angles[2]) == 2):
+                                k = alts[1]
                                 res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
-                                alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
-                    elif (len(angles[0]) == 1) and (len(angles[1]) == 2):
-                        k = alts[0]
-                        res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
-                        alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
-                if res in chi2_allowed:
-                    if (len(angles[0]) > 2) or (len(angles[1]) > 1):
-                        for count,k in enumerate(alts):
-                            area = sum(areas[count])
-                            if len(k) > 1:
-                                res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
-                                alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
-                    elif (len(angles[0]) == 2) and (len(angles[1]) == 1):
-                        k = alts[1]
-                        res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
-                        alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
-                if res in chi3_branched:
-                    if (len(angles[0]) > 1) or (len(angles[1]) > 2) or (len(angles[1]) > 3):
-                        for count,k in enumerate(alts):
-                            area = sum(areas[count])
-                            if len(k) > 1:
-                                res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
-                                alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
-                    elif (len(angles[0]) == 1) and (len(angles[1]) == 1) and (len(angles[2]) == 2):
-                        k = alts[1]
-                        res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
-                        alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
-                if res in rings:
-                    if len(angles[0]) > 1:
-                        for count,k in enumerate(alts):
-                            area = areas[count][0]
-                            if len(k) > 1:
-                                res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
-                                alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
-                    elif len(angles[0]) == 1:
-                        k = [alts[0][0]]
-                        res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
-                        alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
+                                alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
+                        else:
+                            for count,k in enumerate(alts):
+                                if len(k) > 1:
+                                    res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                                    alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
+                    #if res in rings:
+                    #    if len(angles[0]) > 1:
+                    #        for count,k in enumerate(alts):
+                    #            area = areas[count][0]
+                    #            if len(k) > 1:
+                    #                res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                    #                alt_confs.append((resn,restype,chain,res2build,res2buildfreq,area))
+                    #    elif len(angles[0]) == 1:
+                    #        k = [alts[0][0]]
+                    #        res2build,res2buildfreq = match_and_build(k,res,library_tmp,rotamer_geometry)
+                    #        alt_confs.append((resn,restype,chain,res2build,res2buildfreq,1))
         alt_confs = pd.DataFrame(alt_confs)
-        return alt_confs
+        if len(alt_confs) == 0:
+            print('No alts found')
+            print('Done')
+        else:
+            return alt_confs
     else:
-      print('No alts found')
-      print('Done')
+        print('No alts found')
+        print('Done')
 
 def output_build_list(filename,sigmathreshold,alt_confs,buildlimit,ligand,pdbin,distance,singleconfopt):
     """ organize output, apply some filters"""

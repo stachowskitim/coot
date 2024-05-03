@@ -247,4 +247,19 @@ def create_parser():
         help='Mol num in Coot for building. Default: 0'
     )
 
+    CLI.add_argument(
+        '-clashscore',
+        '--clashscore',
+        type=str,
+        default=False,
+        help='Screen alt confs for building for clashes. Default: False'
+    )
+
+    CLI.add_argument(
+        '-densityscore',
+        '--densityscore',
+        type=str,
+        default=True,
+        help='Screen alt confs for building for weak density. Default: False'
+    )
     return CLI

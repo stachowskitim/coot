@@ -7,6 +7,7 @@ Script for building in alternative conformations with Coot
 import os
 import sys
 import pandas as pd
+import numpy as np
 from glob import glob
 
 
@@ -53,7 +54,61 @@ def check_files(filein,build_list):
         print('Done.')
         sys.exit()
 
-def building(build_list,filein,branchopt,molnum,exitopt,atom_list,alt_loc):
+def get_score(mol_num,chain,resno,alt,rotamer):
+    coot.set_rotamer_check_clashes(1)
+    scores = coot.score_rotamers_py(mol_num,chain,resno,'','',1,1,0)
+    if len(scores) == 0:
+        scores = coot.score_rotamers_py(mol_num,chain,resno,'','A',1,1,0)
+    scores_res = []
+    for scored in scores:
+        rotamer2 = scored[0].strip()
+        probability = scored[1]
+        density_fit = scored[2]
+        atom_density_list = scored[3]
+        clashscore = scored[4]
+        scores_res.append((resno,chain,rotamer2,probability, density_fit,clashscore))
+    scores_res = pd.DataFrame(scores_res,columns = ['res_n','chain','rotamer','probability','density_fit','clashscore'])
+    rotamer_score = scores_res[scores_res['rotamer']==rotamer]
+    #print(scores_res)
+    #print(rotamer_score)
+    #print(rotamer)
+    #print(resno)
+    try:
+        return rotamer_score['clashscore'].values[0],rotamer_score['density_fit'].values[0]
+    except:
+        return 1000,-1000
+
+def filter_baddy(clashscoreopt,densitytoleranceopt,clashscore,density_fit):
+    print(clashscoreopt,densitytoleranceopt,clashscore,density_fit)
+    build = False
+    clashscoreopt = bool(clashscoreopt)
+    densitytoleranceopt = bool(densitytoleranceopt)
+    clashcheck = "Fail"
+    densitycheck = "Fail"
+    clashcore_tolerance = 20
+    density_tolerance = 0
+    if (clashscoreopt) & (densitytoleranceopt):
+        if (clashscore <= clashcore_tolerance) & (density_fit >= density_tolerance):
+            build = True
+            clashcheck = "Pass"
+            densitycheck = "Pass"
+    if (clashscoreopt == False) & (densitytoleranceopt == False):
+        build = True
+        clashcheck = "nan"
+        densitycheck = "nan"
+    if (clashscoreopt) & (densitytoleranceopt == False):
+        if clashscore <= clashcore_tolerance:
+            build = True
+            clashcheck = "Pass"
+        densitycheck = "nan"
+    if (densitytoleranceopt) & (clashscoreopt == False):
+        if density_fit >= density_tolerance:
+            build = True
+            densitycheck = "Pass"
+        clashcheck = "nan"
+    return build,clashcheck,densitycheck
+
+def building(build_list,filein,branchopt,molnum,exitopt,atom_list,alt_loc,clashscoreopt,densitytoleranceopt):
 
         #load model
         print('Building alternative conformers...')
@@ -91,27 +146,57 @@ def building(build_list,filein,branchopt,molnum,exitopt,atom_list,alt_loc):
                 rotamer = build_list[build_list['res_n']==resno]['rotamer'].values[k]
                 print('For: ',resno,rotamer,chain)
                 coot.set_go_to_atom_chain_residue_atom_name(chain,resno,'CA')
-                if k == 0:
-                    coot.set_residue_to_rotamer_name(flexrmolnum,chain,resno,'','',rotamer)
-                if k == 1:
-                    coot.altconf()
-                    coot.set_add_alt_conf_split_type_number(branchopt)
-                    coot_utils.with_auto_accept(\
-                    [coot.add_alt_conf_py,flexrmolnum,chain,resno,'','',1])
-                    coot.set_residue_to_rotamer_name(flexrmolnum,chain,resno,'','B',rotamer)
-                if k > 1:
-                    coot.altconf()
-                    coot.set_add_alt_conf_split_type_number(branchopt)
-                    coot_utils.with_auto_accept(\
-                    [coot.add_alt_conf_py,flexrmolnum,chain,resno,'','A',1])
-                    for atom in atom_list:
-                        coot.set_atom_string_attribute(\
-                        flexrmolnum,chain,resno,'',atom,'','alt-conf',alt_loc[k])
-                    coot.set_residue_to_rotamer_name(flexrmolnum,chain,resno,'',alt_loc[k],rotamer)
+
+                ## filter by clashscore or density_fit before building
+                if (clashscoreopt) or (densitytoleranceopt):
+                    clashscore,density_fit = get_score(flexrmolnum,chain,resno,alt_loc[k],rotamer)
+                    build,clashcheck,densitycheck = filter_baddy(clashscoreopt,densitytoleranceopt,clashscore,density_fit)
+                    if (build):
+                        if k == 0:
+                            coot.set_residue_to_rotamer_name(flexrmolnum,chain,resno,'','',rotamer)
+                        if k == 1:
+                            coot.altconf()
+                            coot.set_add_alt_conf_split_type_number(branchopt)
+                            coot_utils.with_auto_accept(\
+                            [coot.add_alt_conf_py,flexrmolnum,chain,resno,'','',1])
+                            coot.set_residue_to_rotamer_name(flexrmolnum,chain,resno,'','B',rotamer)
+                        if k > 1:
+                            coot.altconf()
+                            coot.set_add_alt_conf_split_type_number(branchopt)
+                            coot_utils.with_auto_accept(\
+                            [coot.add_alt_conf_py,flexrmolnum,chain,resno,'','A',1])
+                            for atom in atom_list:
+                                coot.set_atom_string_attribute(\
+                                flexrmolnum,chain,resno,'',atom,'','alt-conf',alt_loc[k])
+                            coot.set_residue_to_rotamer_name(flexrmolnum,chain,resno,'',alt_loc[k],rotamer)
+                    #update output build list file
+                    build_list.loc[(build_list['res_n']==resno)&\
+                                   (build_list['chain']==chain)&\
+                                   (build_list['rotamer']==rotamer),['clash/density check']] = clashcheck+'/'+densitycheck
+                else:
+                    if k == 0:
+                        coot.set_residue_to_rotamer_name(flexrmolnum,chain,resno,'','',rotamer)
+                    if k == 1:
+                        coot.altconf()
+                        coot.set_add_alt_conf_split_type_number(branchopt)
+                        coot_utils.with_auto_accept(\
+                        [coot.add_alt_conf_py,flexrmolnum,chain,resno,'','',1])
+                        coot.set_residue_to_rotamer_name(flexrmolnum,chain,resno,'','B',rotamer)
+                    if k > 1:
+                        coot.altconf()
+                        coot.set_add_alt_conf_split_type_number(branchopt)
+                        coot_utils.with_auto_accept(\
+                        [coot.add_alt_conf_py,flexrmolnum,chain,resno,'','A',1])
+                        for atom in atom_list:
+                            coot.set_atom_string_attribute(\
+                            flexrmolnum,chain,resno,'',atom,'','alt-conf',alt_loc[k])
+                        coot.set_residue_to_rotamer_name(flexrmolnum,chain,resno,'',alt_loc[k],rotamer)
         coot.set_go_to_atom_chain_residue_atom_name(chain,resno+1,'CA')
         #output model
         coot.write_pdb_file(flexrmolnum,build_list_file+'_flexr.pdb')
         coot.write_cif_file(flexrmolnum,build_list_file+'_flexr.cif')
+
+        build_list.to_csv(build_list_file+'.csv',header=True,index=False)
 
         print('Building finished.')
         print('')
@@ -133,7 +218,7 @@ def exit(exitopt):
         print('Exiting Coot...')
         print('Done.')
 
-def building_run(build_list,filein,branchopt,molnum,exitopt):
+def building_run(build_list,filein,branchopt,molnum,exitopt,clashscore,densityscore):
 
         check_files(filein,build_list)
 
@@ -141,7 +226,7 @@ def building_run(build_list,filein,branchopt,molnum,exitopt):
 
         alt_loc = get_alt_locs()
 
-        flexrmolnum = building(build_list,filein,branchopt,molnum,exitopt,atom_list,alt_loc)
+        flexrmolnum = building(build_list,filein,branchopt,molnum,exitopt,atom_list,alt_loc,clashscore,densityscore)
 
         exit(exitopt)
 
