@@ -54,7 +54,8 @@ def ringer_parser(file,step):
     chain = []
     for j in dataframe['res']:
         chain_n = ''.join(i for i in j if not i.isdigit())
-        chain_n = chain_n.strip()[-1]
+        chain_n = chain_n.replace(' ','')
+        chain_n = chain_n.strip()[3]
         chain.append(chain_n)
     dataframe['chain'] = chain
 

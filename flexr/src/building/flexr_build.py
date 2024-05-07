@@ -148,7 +148,7 @@ def building(build_list,filein,branchopt,molnum,exitopt,atom_list,alt_loc,clashs
                 coot.set_go_to_atom_chain_residue_atom_name(chain,resno,'CA')
 
                 ## filter by clashscore or density_fit before building
-                if (clashscoreopt) or (densitytoleranceopt):
+                if (clashscoreopt == True) or (densitytoleranceopt == True):
                     clashscore,density_fit = get_score(flexrmolnum,chain,resno,alt_loc[k],rotamer)
                     build,clashcheck,densitycheck = filter_baddy(clashscoreopt,densitytoleranceopt,clashscore,density_fit)
                     if (build):
@@ -234,4 +234,4 @@ def building_run(build_list,filein,branchopt,molnum,exitopt,clashscore,densitysc
 
 if __name__ == '__main__':
     print(sys.argv[:])
-    building_run(sys.argv[3], sys.argv[4], sys.argv[5],sys.argv[6],sys.argv[7])
+    building_run(sys.argv[3], sys.argv[4], sys.argv[5],sys.argv[6],sys.argv[7],sys.argv[8],sys.argv[9])

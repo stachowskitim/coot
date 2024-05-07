@@ -73,7 +73,7 @@ def main(ARGS):
             libraryloc, cootloc,cootexe = get_coot_loc()
             try:
                 buildpath = cootloc+'src/building/flexr_build.py'
-                os.system('%s --script %s %s %s %s %s %s' % (cootexe,buildpath,build_list,ARGS.pdb_in,ARGS.branching,ARGS.cootmolnum,ARGS.exitcoot))
+                os.system('%s --script %s %s %s %s %s %s %s %s' % (cootexe,buildpath,build_list,ARGS.pdb_in,ARGS.branching,ARGS.cootmolnum,ARGS.exitcoot,ARGS.clashscore,ARGS.densityscore))
             #os.system('COOT1 --script flexr_build.py %s %s %s %s %s' % (build_list,ARGS.pdb_in,ARGS.branching,ARGS.cootmolnum,ARGS.exitcoot))
             except:
                 print('Cannot find flexr building script.')
