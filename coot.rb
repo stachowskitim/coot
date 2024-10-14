@@ -8,26 +8,28 @@ class Coot < Formula
   license any_of: ["GPL-3.0-only", "LGPL-3.0-only", "GPL-2.0-or-later"]
 
   #bottle do
-  #  root_url "http://vivace.bi.a.u-tokyo.ac.jp"
-  #  sha256 cellar: :any,                 arm64_sonoma:   "e71f1f74f0d813b71c6d844b25f2872e64b8dbce552291428d1ce23db0f0aa55"
-  #  sha256 cellar: :any,                 sonoma:         "7acb660face4618663022a91bde53bb73a2184f0d1e46b5093c16319e5d58d94"
+  #  root_url "https://ghcr.io/v2/brewsci/bio"
+  #  rebuild 2
+  #  sha256 arm64_sonoma: "c3bd4b0cb96630b91c33249f281b37b4c45d7d4df2343a2364b3c770f62f9754"
+  #  sha256 ventura:      "207631648cf9b5e728c11c0d7dfaa6f064586becd57e790d56f2a640f930b735"
+  #  sha256 x86_64_linux: "26560168864463c3d08416e9c153b392034a82b805e67953e251766c715d1350"
   #end
 
-  head do
-    url "https://github.com/stachowskitim/coot.git", branch: "main"
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "libtool" => :build
-    depends_on "swig" => :build
-  end
-
   #head do
-  #  url "https://github.com/pemsley/coot.git", branch: "main"
+  #  url "https://github.com/stachowskitim/coot.git", branch: "main"
   #  depends_on "autoconf" => :build
   #  depends_on "automake" => :build
   #  depends_on "libtool" => :build
   #  depends_on "swig" => :build
   #end
+
+  head do
+    url "https://github.com/pemsley/coot.git", branch: "main"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+    depends_on "swig" => :build
+  end
 
   depends_on "glm" => :build
   depends_on "pkg-config" => :build
