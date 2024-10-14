@@ -15,21 +15,21 @@ class Coot < Formula
   #  sha256 x86_64_linux: "26560168864463c3d08416e9c153b392034a82b805e67953e251766c715d1350"
   #end
 
-  #head do
-  #  url "https://github.com/stachowskitim/coot.git", branch: "main"
-  #  depends_on "autoconf" => :build
-  #  depends_on "automake" => :build
-  #  depends_on "libtool" => :build
-  #  depends_on "swig" => :build
-  #end
-
   head do
-    url "https://github.com/pemsley/coot.git", branch: "main"
+    url "https://github.com/stachowskitim/coot.git", branch: "main"
     depends_on "autoconf" => :build
     depends_on "automake" => :build
     depends_on "libtool" => :build
     depends_on "swig" => :build
   end
+
+  #head do
+  #  url "https://github.com/pemsley/coot.git", branch: "main"
+  #  depends_on "autoconf" => :build
+  #  depends_on "automake" => :build
+  #  depends_on "libtool" => :build
+  #  depends_on "swig" => :build
+  #end
 
   depends_on "glm" => :build
   depends_on "pkg-config" => :build
