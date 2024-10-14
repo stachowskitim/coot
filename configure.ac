@@ -26,7 +26,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 
 
-AC_INIT([coot],[1.1.08])
+AC_INIT([coot],[1.1.x-pre])
 AC_CONFIG_SRCDIR(src/main.cc)
 AM_INIT_AUTOMAKE
 
@@ -106,6 +106,16 @@ dnl So, let's check GLIB here, should be harmless.
 dnl
 PKG_CHECK_MODULES([GLIB], [glib-2.0])
 
+uname_s=$(uname -s)
+AM_CONDITIONAL([OS_DARWIN], [test x$uname_s = xDarwin ])
+
+# this variable is used by the bin/coot script:
+COOT_BINARY_NAME=coot-1
+if test x$uname_s = xDarwin ; then
+   COOT_BINARY_NAME=MacCoot
+fi
+AC_SUBST(COOT_BINARY_NAME)
+
 
 dnl test for WINDOWS_MINGW
 AM_MINGW_WINDOWS
@@ -147,7 +157,7 @@ if test x$with_libdw == xtrue ; then
 
    case "${host_os}" in
     *darwin* )
-      PKG_CHECK_MODULES(LIBDW, libdwarf >= 0.7)
+      PKG_CHECK_MODULES(LIBDW, libdwarf)
       ;;
     *linux* )
       PKG_CHECK_MODULES(LIBDW, libdw >= 0.20)
@@ -245,7 +255,31 @@ CFLAGS="$save_cflags"
 
 dnl =========================== GLM ================================
 
-PKG_CHECK_MODULES(GLM, glm >= 0.9.9)
+# While GLM has no pkgconfig glm.pc file, we have to be a bit more hand-to-mouth
+# about its configuration
+# PKG_CHECK_MODULES(GLM, glm >= 0.9.9)
+
+# Copied and adapted from how gemmi and rdkit are found below
+AC_ARG_WITH([glm], AS_HELP_STRING([--with-glm location of the GLM package]), with_glm="$withval", with_glm=false)
+
+AC_MSG_CHECKING([for GLM])
+if test "x$with_glm" = xfalse ; then
+   if test -x $prefix/include/glm ; then
+      #echo OK, good we found glm in $prefix
+      AC_MSG_RESULT(yes)
+      glm_install_dir=$prefix
+      AC_SUBST(GLM_CXXFLAGS, "-I$glm_install_dir/include")
+      AC_SUBST(GLM_LIBS, "-L$glm_install_dir/lib -lglm")
+   else
+      AC_MSG_RESULT(no)
+      echo Configuration error. Could not find GLM.
+      exit 1
+   fi
+else
+   AC_MSG_RESULT(yes)
+   AC_SUBST(GLM_CXXFLAGS, "-I$withval/include")
+   AC_SUBST(GLM_LIBS, "-L$withval/lib -lglm")
+fi
 
 dnl =========================== GTK ===========================
 
@@ -258,7 +292,7 @@ dnl =========================== Python =========================
 AM_PATH_PYTHON([3.7])
 AX_PYTHON_DEVEL
 # this is not the canonical way to use arguments 2 and 3, but it works in this case
-AX_PYTHON_MODULE([requests], [echo requests found], [echo requests not found])
+# AX_PYTHON_MODULE([requests], [echo requests found], [echo requests not found])
 
 dnl =========================== PyGObject =========================
 
@@ -298,12 +332,14 @@ AC_SUBST(L_BOOST_PYTHON)
 
 dnl =========================== RDKit =========================
 
+# this does nothing now - keep it for backwards compatibility
 AC_ARG_WITH(enhanced-ligand-tools, [  --with-enhanced-ligand-tools with optional ligand-related dependencies ],
  coot_enhanced_ligand_additions="true",
  coot_enhanced_ligand_additions="false")
 
 # but we can't use enhanced-ligand-tools without python:
 if $coot_enhanced_ligand_additions = true ; then
+   echo no longer need to specify --with-enhanced-ligand-tools
    if test -n "$COOT_USE_PYTHON_TRUE" ; then
       echo Configuration error: cant use enhanced-ligand-tools without python
       exit 1
@@ -344,13 +380,10 @@ else
    RDKIT_LIBS="-L$rdkit_install_dir/lib -lRDKitMolDraw2D -lRDKitForceFieldHelpers -lRDKitDescriptors -lRDKitForceField -lRDKitSubstructMatch -lRDKitOptimizer -lRDKitDistGeomHelpers -lRDKitDistGeometry -lRDKitChemReactions -lRDKitAlignment -lRDKitEigenSolvers -lRDKitDepictor -lRDKitMolChemicalFeatures -lRDKitPartialCharges -lRDKitFileParsers -lRDKitRDGeometryLib -lRDKitGraphMol -lRDKitShapeHelpers -lRDKitFingerprints -lRDKitMolAlign -lRDKitMolTransforms -lRDKitChemTransforms -lRDKitSmilesParse -lRDKitGenericGroups -lRDKitRingDecomposerLib -lRDKitFilterCatalog -lRDKitCatalogs -lRDKitSubgraphs -lRDKitPartialCharges -lRDKitRDGeneral -lRDKitDataStructs -lboost_serialization -lboost_iostreams"
 fi
 
-if test x$coot_enhanced_ligand_additions = xtrue ; then
-   ENHANCED_LIGAND_TOOLS_CPPFLAGS="-DMAKE_ENHANCED_LIGAND_TOOLS"
-else
-   ENHANCED_LIGAND_TOOLS_CPPFLAGS=""
-fi
+# this must always be true now
+ENHANCED_LIGAND_TOOLS_CPPFLAGS="-DMAKE_ENHANCED_LIGAND_TOOLS"
 
-echo ENHANCED_LIGAND_TOOLS_CPPFLAGS $ENHANCED_LIGAND_TOOLS_CPPFLAGS
+# echo ENHANCED_LIGAND_TOOLS_CPPFLAGS $ENHANCED_LIGAND_TOOLS_CPPFLAGS
 
 AC_ARG_ENABLE(layla-only, [  --enable-layla-only build layla only (not coot) ],
  layla_only="yes",
@@ -365,7 +398,7 @@ AC_ARG_ENABLE(libcootapi-only, [  --enable-libcootapi-only build libcootapi only
 esac],[libcootapi_only=false])
 AM_CONDITIONAL([COND_LIBCOOTAPI_ONLY], [test "$libcootapi_only" = true])
 
-AC_ARG_ENABLE(relocatable, [  --relocatable try to make the binaries work independent of the installation directory],
+AC_ARG_ENABLE(relocatable-binaries, [  --enable-relocatable-binaries try to make the binaries work independent of the installation directory],
    relocatable=yes, relocatable=no)
 AM_CONDITIONAL([RELOCATABLE_BINARIES], [test "$relocatable" =  yes])
 
@@ -528,6 +561,7 @@ auxil/strand-analysis/Makefile
 auxil/vectors/Makefile
 src/Makefile
 src/coot
+src/coot-relocatable-binaries
 ui/Makefile
 flexr/Makefile
 flexr/src/Makefile

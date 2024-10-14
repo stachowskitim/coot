@@ -45,6 +45,7 @@
 //! Add a colour rule: eg. ("//A", "red")
 void
 coot::molecule_t::add_colour_rule(const std::string &selection, const std::string &colour_name) {
+
    colour_rules.push_back(std::make_pair(selection, colour_name));
 }
 
@@ -142,7 +143,7 @@ coot::molecule_t::M2T_updateFloatParameter(const std::string &param_name, float 
    bool done = false;
    for (unsigned int i=0; i<M2T_float_params.size(); i++) {
       if (param_name == M2T_float_params[i].first) {
-         M2T_float_params[i].first = value;
+         M2T_float_params[i].second = value;
          done = true;
          break;
       }
@@ -159,7 +160,7 @@ coot::molecule_t::M2T_updateIntParameter(const std::string &param_name, int valu
    bool done = false;
    for (unsigned int i=0; i<M2T_int_params.size(); i++) {
       if (param_name == M2T_int_params[i].first) {
-         M2T_int_params[i].first = value;
+         M2T_int_params[i].second = value;
          done = true;
          break;
       }
@@ -197,7 +198,8 @@ coot::molecule_t::print_M2T_IntParameters() const {
 coot::simple_mesh_t
 coot::molecule_t::get_molecular_representation_mesh(const std::string &atom_selection_str,
                                                     const std::string &colour_scheme,
-                                                    const std::string &style) const {
+                                                    const std::string &style,
+                                                    int secondaryStructureUsageFlag) const {
 
    bool debug = true;
 
@@ -261,10 +263,12 @@ coot::molecule_t::get_molecular_representation_mesh(const std::string &atom_sele
                   gv.normal[i] = vcn.normal[i];
                   gv.color[i]  = 0.0037f * vcn.color[i];
                }
+               gv.color[3] = 0.00392f * vcn.color[3];
                if ((gv.color[0] + gv.color[1] + gv.color[2]) > 10.0) {
-                  gv.color *= 0.00392; // /255
+                  gv.color *= 0.00392f; // /255
+                  if (gv.color[3] > 0.99)
+                     gv.color[3] = 1.0;
                }
-               gv.color[3] = 1.0;
             }
 
             auto indexArray = surface.getIndexArray();
@@ -381,7 +385,7 @@ coot::molecule_t::get_molecular_representation_mesh(const std::string &atom_sele
 
    try {
 
-      auto my_mol = std::make_shared<MyMolecule>(atom_sel.mol);
+      auto my_mol = std::make_shared<MyMolecule>(atom_sel.mol, secondaryStructureUsageFlag);
       // auto chain_cs = ColorScheme::colorChainsScheme();
       auto chain_cs = ColorScheme::colorChainsSchemeWithColourRules(colour_rules);
       if (! colour_rules.empty())

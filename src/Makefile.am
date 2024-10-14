@@ -244,11 +244,6 @@ if USE_BACKWARD
    BACKWARD_FLAGS=-DUSE_BACKWARD
 endif
 
-if RELOCATABLE_BINARIES
-    # make coot from coot.in
-else
-    # make coot from coot_bin
-endif
 
 # SWIG_FLAGS is something of a misnomer.  It actually defines
 # COOT_USE_GTK2_INTERFACE, which is needed to correctly declare the
@@ -312,20 +307,27 @@ _coot_la_LDFLAGS = -module $(SHARED_LDFLAGS) --no-undefined  \
 
 if OS_WIN32
 # no more libexec for windows
-bin_PROGRAMS     = Coot coot-density-score-by-residue-bin
+bin_PROGRAMS     = coot-1 coot-density-score-by-residue-bin
 else
-libexec_PROGRAMS = Coot coot-density-score-by-residue-bin
+if OS_DARWIN
+libexec_PROGRAMS = MacCoot coot-density-score-by-residue-bin
 bin_PROGRAMS = 
+else
+libexec_PROGRAMS = coot-1 coot-density-score-by-residue-bin
+bin_PROGRAMS =
+endif
 endif
 
 dist_bin_SCRIPTS = coot coot-density-score-by-residue
+
 check_PROGRAMS = test-coot-align test-cholesky
 
 #coot_fix_nomenclature_errors_SOURCES = \
 #	fix-nomenclature.cc    \
 #	coot-nomenclature.cc
 
-Coot_SOURCES = main.cc glade-callbacks.cc glade-callbacks-main-window.cc \
+if OS_DARWIN
+MacCoot_SOURCES = main.cc glade-callbacks.cc glade-callbacks-main-window.cc \
         glade-callbacks-preferences.cc glade-callbacks-shader-settings.cc \
         new-startup.cc \
         setup-gui-components.cc \
@@ -333,17 +335,47 @@ Coot_SOURCES = main.cc glade-callbacks.cc glade-callbacks-main-window.cc \
 	create-menu-item-actions.cc \
 	create-menu-item-actions.hh
 
+else
+coot_1_SOURCES = main.cc glade-callbacks.cc glade-callbacks-main-window.cc \
+        glade-callbacks-preferences.cc glade-callbacks-shader-settings.cc \
+        new-startup.cc \
+        setup-gui-components.cc \
+        setup-gui-components.hh \
+	create-menu-item-actions.cc \
+	create-menu-item-actions.hh
+endif
+
 # is it a good idea to move functions from coot-bin dependencies into libcootsumo?
 # e.g. atoms_with_zero_occupancy()?
-Coot_LDADD =  \
+if OS_DARWIN
+MacCoot_LDADD =  \
 	libcootsumo.la                                     \
+	$(top_builddir)/pli/libcoot-pli.la                 \
+	$(top_builddir)/density-contour/libcoot-isosurface.la  	\
 	$(top_builddir)/layla/libcoot-layla.la             \
+	$(top_builddir)/coot-utils/libcoot-map-utils.la	   \
+	$(top_builddir)/coords/libcoot-coords.la	   \
 	$(top_builddir)/coot-utils/libcoot-coord-extras.la \
 	$(top_builddir)/coot-utils/libcoot-coord-utils.la  \
 	$(top_builddir)/lidia-core/libcoot-lidia-core.la   \
 	$(top_builddir)/geometry/libcoot-geometry.la       \
 	$(top_builddir)/utils/libcoot-utils.la             \
-	$(CLIPPER_LIBS) $(CURL_LIBS) $(GTK_LIBS) $(EPOXY_LIBS) $(EMBEDDED_PYTHON_LIBS)
+	$(CLIPPER_LIBS) $(CURL_LIBS) $(GUILE_LDFLAGS) $(GTK_LIBS) $(EPOXY_LIBS) $(EMBEDDED_PYTHON_LIBS)
+else
+coot_1_LDADD =  \
+	libcootsumo.la                                     \
+	$(top_builddir)/pli/libcoot-pli.la                 \
+	$(top_builddir)/density-contour/libcoot-isosurface.la  	\
+	$(top_builddir)/layla/libcoot-layla.la             \
+	$(top_builddir)/coot-utils/libcoot-map-utils.la	   \
+	$(top_builddir)/coords/libcoot-coords.la	   \
+	$(top_builddir)/coot-utils/libcoot-coord-extras.la \
+	$(top_builddir)/coot-utils/libcoot-coord-utils.la  \
+	$(top_builddir)/lidia-core/libcoot-lidia-core.la   \
+	$(top_builddir)/geometry/libcoot-geometry.la       \
+	$(top_builddir)/utils/libcoot-utils.la             \
+	$(CLIPPER_LIBS) $(CURL_LIBS) $(GUILE_LDFLAGS) $(GTK_LIBS) $(EPOXY_LIBS) $(EMBEDDED_PYTHON_LIBS)
+endif
 
 
 lib_LTLIBRARIES=libcootsumo.la
@@ -611,6 +643,8 @@ libcootsumo_la_SOURCES = \
 	lbg-callbacks-outer.cc   \
 	lbg-interface.cc         \
 	ligand-check.hh          \
+        M2T-interface.hh         \
+        M2T-interface.cc         \
 	Model.cc Model.hh        \
 	make-a-dodec.cc make-a-dodec.hh \
 	map-statistics.hh               \
@@ -702,10 +736,6 @@ libcootsumo_la_SOURCES = \
 	sdf-interface.hh         \
 	sdf-internal.hh          \
 	select-atom-info.hh      \
-	sequence-view.hh         \
-	sequence-view.cc         \
-	seq-view-interface.c     \
-	seq-view-interface.h     \
 	Shader.cc Shader.hh      \
 	simple-distance-object.hh \
 	sound.cc                 \
@@ -714,14 +744,12 @@ libcootsumo_la_SOURCES = \
 	startup-utils.cc         \
 	startup-scripts.hh       \
 	startup-scripts.hh       \
-	tiny_gltf.h              \
 	testing.cc testing-2.cc  \
 	testing-data.hh          \
 	testing.hh               \
 	Texture.cc Texture.hh    \
 	TextureMesh.cc TextureMesh.hh \
 	tomo-tools.cc \
-	trackball.c trackball.h  \
 	triangle-extras.h        \
 	user-mods.hh user-mods.cc\
 	xmap-utils.cc 		 \
@@ -811,7 +839,11 @@ endif
 
 # coot_bin_LDFLAGS = -static -lstdc++
 #
-Coot_LDFLAGS = $(EXPORT_DYNAMIC_FLAG_SPEC)
+if OS_DARWIN
+MacCoot_LDFLAGS = $(EXPORT_DYNAMIC_FLAG_SPEC)
+else
+coot_1_LDFLAGS = $(EXPORT_DYNAMIC_FLAG_SPEC)
+endif
 
 # coot_bin_CXXFLAGS=-Wl,--export-dynamic -dynamiclib
 #  -Wl,-undefined -Wl,dynamic_lookup

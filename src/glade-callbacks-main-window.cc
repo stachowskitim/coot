@@ -655,6 +655,55 @@ void on_generic_overlay_frame_cancel_button_clicked(GtkButton       *button,
    }
 }
 
+// 20240518-PE this is the only function in this file that uses python. Hmm.
+// So rewrite mutate_by_overlap() into C++ (non-trivial)
+//
+#include "cc-interface-scripting.hh"
+
+extern "C" G_MODULE_EXPORT
+void on_replace_residue_ok_button_clicked(GtkButton *button,
+                                          gpointer user_data) {
+
+   GtkWidget *frame = widget_from_builder("replace_residue_frame");
+   GtkWidget *entry = widget_from_builder("replace_residue_entry");
+   std::string new_residue_type = gtk_editable_get_text(GTK_EDITABLE(entry));
+
+   graphics_info_t g;
+   std::pair<int, mmdb::Atom *> aa = g.get_active_atom();
+   int imol = aa.first;
+   if (is_valid_model_molecule(imol)) {
+      mmdb::Residue *residue_p = aa.second->residue;
+      if (residue_p) {
+         coot::protein_geometry &geom = *graphics_info_t::Geom_p();
+         std::pair<bool, coot::dictionary_residue_restraints_t> rp = geom.get_monomer_restraints(new_residue_type, imol);
+         if (rp.first) {
+            const auto &restraints_new_type = rp.second;
+            mmdb::Manager *mol = graphics_info_t::molecules[imol].atom_sel.mol;
+            std::string current_residue_type = residue_p->GetResName();
+            std::pair<bool, coot::dictionary_residue_restraints_t> rp_current =
+               geom.get_monomer_restraints(current_residue_type, imol);
+            if (rp_current.first) {
+               const auto &restraints_current_type = rp_current.second;
+               int status = coot::util::mutate_by_overlap(residue_p, mol, restraints_current_type, restraints_new_type);
+               if (status == 0)
+                  graphics_info_t::log.log(logging::WARNING, "mutate_by_overlap() failed");
+            }
+         }
+      }
+   }
+   gtk_widget_set_visible(frame, FALSE);
+
+}
+
+extern "C" G_MODULE_EXPORT
+void on_replace_residue_cancel_button_clicked(GtkButton *button,
+                                              gpointer user_data) {
+
+   GtkWidget *frame = widget_from_builder("replace_residue_frame");
+   gtk_widget_set_visible(frame, FALSE);
+
+}
+
 #include "c-interface-ligands.hh"
 
 extern "C" G_MODULE_EXPORT

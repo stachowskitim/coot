@@ -89,6 +89,10 @@ struct Renderer {
         TextSpan();
         TextSpan(const std::string&);
         TextSpan(const std::vector<TextSpan>&);
+
+        #ifdef __EMSCRIPTEN__
+        inline friend std::size_t hash_value(const TextSpan&);
+        #endif
     };
 
     struct Text {
@@ -111,60 +115,104 @@ struct Renderer {
     #else // __EMSCRIPTEN__ defined
     //       Lhasa-specific includes/definitions
     struct Path;
+    struct PathElement;
     struct DrawingCommand;
+    class TextMeasurementCache;
     struct BrushStyle {
         Color color;
         double line_width;
     };
     private:
 
+    /// Not owned pointer
+    TextMeasurementCache* tm_cache;
     BrushStyle style;
     graphene_point_t position;
     std::vector<DrawingCommand> drawing_commands;
     emscripten::val text_measurement_function;
-    // WIP
-    std::unique_ptr<std::vector<DrawingCommand>> currently_created_path;
-    // WIP
-    std::vector<std::vector<DrawingCommand>*> drawing_structure_stack;
+
+    /// If the last command is a non-closed path,
+    /// returns a mutable reference to it.
+    /// If not, it creates a new path.
+    Path& top_path();
+
+    /// If the last command is a path (may be closed),
+    /// returns a pointer to it.
+    /// Otherwise nullptr
+    Path* top_path_if_exists();
+
+    /// Initialize new Path structure
+    Path create_new_path() const;
+    /// Does not add the finishing line
+    void close_path_inner();
 
     public:
-
     struct Line {
         graphene_point_t start, end;
-        BrushStyle style;
+        // BrushStyle style;
     };
 
     struct Arc {
         graphene_point_t origin;
         double radius, angle_one, angle_two;
-        bool has_fill;
-        Color fill_color;
-        bool has_stroke;
-        BrushStyle stroke_style;
+        // bool has_fill;
+        // Color fill_color;
+        // bool has_stroke;
+        // BrushStyle stroke_style;
     };
 
+    struct PathElement {
+        std::variant<Line, Arc> content;
+
+        // todo: functions
+        bool is_line() const;
+        bool is_arc() const;
+
+        const Line& as_line() const;
+        const Arc& as_arc() const;
+
+    };
     struct Path {
-        std::vector<DrawingCommand> commands;
+        graphene_point_t initial_point;
+        std::vector<PathElement> elements;
+        // WIP
+        bool closed;
+
         Color fill_color;
         bool has_fill;
         // this needs work. Do we need a boolean here?
+        bool has_stroke;
         BrushStyle stroke_style;
+
+        const std::vector<PathElement>& get_elements() const;
     };
 
     struct DrawingCommand {
-        std::variant<Line, Arc, Path, Text> content;
+        std::variant<Path, Text> content;
 
-        bool is_path();
-        bool is_arc();
-        bool is_line();
-        bool is_text();
+        bool is_path() const;
+        bool is_text() const;
 
         const Path& as_path() const;
-        const Arc& as_arc() const;
-        const Line& as_line() const;
+        Path& as_path_mut();
         const Text& as_text() const;
     };
 
+    class TextMeasurementCache {
+        public:
+        typedef std::size_t hash_t;
+        private:
+        std::map<hash_t, TextSize> cache;
+
+        public:
+        std::optional<TextSize> lookup_span(const TextSpan& text) const;
+        std::optional<TextSize> lookup_span(hash_t span_hash) const;
+        void add(hash_t span_hash, TextSize value);
+        void add(const TextSpan& text, TextSize value);
+        std::size_t size() const;
+    };
+
+    Renderer(emscripten::val text_measurement_function, TextMeasurementCache& cache);
     Renderer(emscripten::val text_measurement_function);
 
     std::vector<DrawingCommand> get_commands() const;
@@ -242,5 +290,46 @@ class MoleculeRenderContext {
 };
 
 } //coot::ligand_editor_canvas::impl
+
+#ifdef __EMSCRIPTEN__
+#include <boost/functional/hash.hpp>
+#include <tuple>
+
+inline std::size_t coot::ligand_editor_canvas::impl::hash_value(const coot::ligand_editor_canvas::impl::Renderer::TextSpan& span);
+
+namespace std {
+    template <> struct std::hash<coot::ligand_editor_canvas::impl::Renderer::Color> {
+        std::size_t operator()(const coot::ligand_editor_canvas::impl::Renderer::Color& color) const noexcept {
+            return boost::hash_value(std::tie(color.a, color.r, color.g, color.b));
+        }
+    };
+    template <> struct std::hash<coot::ligand_editor_canvas::impl::Renderer::TextStyle> {
+        std::size_t operator()(const coot::ligand_editor_canvas::impl::Renderer::TextStyle& style) const noexcept {
+            auto ret = std::hash<coot::ligand_editor_canvas::impl::Renderer::Color>{}(style.color);
+            boost::hash_combine(ret, std::tie(
+                style.size,
+                //style.color hashed above
+                style.specifies_color,
+                style.positioning,
+                style.weight
+            ));
+            return ret;
+        }
+    };
+
+    template<> struct std::hash<coot::ligand_editor_canvas::impl::Renderer::TextSpan> {
+        std::size_t operator()(const coot::ligand_editor_canvas::impl::Renderer::TextSpan& span) const noexcept {
+           return coot::ligand_editor_canvas::impl::hash_value(span);
+        }
+    };
+}
+
+inline std::size_t coot::ligand_editor_canvas::impl::hash_value(const coot::ligand_editor_canvas::impl::Renderer::TextSpan& span) {
+    auto ret = std::hash<coot::ligand_editor_canvas::impl::Renderer::TextStyle>{}(span.style);
+    boost::hash_combine(ret, span.specifies_style);
+    boost::hash_combine(ret, span.content);
+    return ret;
+}
+#endif // __EMSCRIPTEN__
 
 #endif // COOT_LIGAND_EDITOR_CANVAS_RENDER_HPP

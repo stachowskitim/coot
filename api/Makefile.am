@@ -37,11 +37,11 @@ AM_CPPFLAGS = \
 pkgincludedir = $(includedir)/coot/api
 
 pkginclude_HEADERS = \
-coot-molecule.hh	 make-a-dodec.hh	                                           \
+coot-molecule.hh	 make-a-dodec.hh	    lsq-results.hh                         \
 colour-functions.hh	 gensurf.hh		    validation-information.hh              \
 coot-colour.hh		 ghost-molecule-display.hh  residue-validation-information.hh      \
 molecules-container.hh	 ncs.hh			    geometry-graphs.hh                     \
-	 		 rama-plot-phi-psi.hh	    superpose-results.hh                   \
+header-info.hh 		 rama-plot-phi-psi.hh	    superpose-results.hh                   \
 add-terminal-residue.hh  interfaces.hh              moorhen-h-bonds.hh                     \
 atom-pull.hh             rigid-body-fit.hh          svg-store-key.hh                       \
 phi-psi-prob.hh          saved-strand-info.hh       simple-molecule.hh                     \
@@ -59,10 +59,10 @@ coot-molecule-bonds.cc	     coot-molecule-validation.cc                      mol
 molecules-container.cc       make-a-dodec.cc	                              molecules-container-ligand-fitting.cc \
 phi-psi-prob.cc              coot-molecule-moltris.cc                         coot-molecule-replace-fragment.cc \
 coot-molecule-backup.cc      coot-molecule-bonds-instanced.cc                 molecules-container-mmrrcc.cc \
-molecules-container-gltf.cc \
+molecules-container-gltf.cc  mmcif-tests.cc \
 coot-molecule-refine.cc      molecules-container-superpose.cc                 rigid-body-fit.cc \
 moorhen-h-bonds.cc           molecules-container-bucca-ml-growing.cc          instancing.cc  \
-molecules-container-maps.cc  coot-molecule-change-chain-id.cc    \
+molecules-container-maps.cc  coot-molecule-change-chain-id.cc                 coot-molecule-modelling.cc \
 blender-mesh.cc              coot-molecule-blender.cc                         molecules-container-blender.cc
 
 libcoot_api_la_LDFLAGS = $(SHARED_LDFLAGS)            \

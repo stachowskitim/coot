@@ -38,12 +38,12 @@ public:
       std::size_t n_atoms = v.size();
       if (n_atoms > 0) {
 	 FCXXCoord sum;
-	 for (int i=0; i<n_atoms; i++)
+	 for (std::size_t i=0; i<n_atoms; i++)
 	    sum += v[i];
 	 centre_ = sum/float(v.size());
 
 	 clipper::Matrix<double> mat(3,3);
-	 for (int i=0; i<n_atoms; i++) {
+	 for (std::size_t i=0; i<n_atoms; i++) {
 	    mat(0,0) += (v[i].x() - centre_.x()) * (v[i].x() - centre_.x());
 	    mat(1,1) += (v[i].y() - centre_.y()) * (v[i].y() - centre_.y());
 	    mat(2,2) += (v[i].z() - centre_.z()) * (v[i].z() - centre_.z());
@@ -91,7 +91,7 @@ public:
       }
    }
    FCXXCoord normal() const {
-         return FCXXCoord(abcd[0], abcd[1], abcd[2]);
+         return FCXXCoord(-abcd[0], -abcd[1], -abcd[2]);
    }
 };
 
@@ -112,13 +112,13 @@ public:
    // and triangles fan from ribose_centre to 0,1,2,3,4,0
    // Draw a stick from ribose_atoms[1] to 1/3 of the way to
    // centre.
+   FCXXCoord centre;
+   FCXXCoord normal;
+   double radius;
    std::vector<mmdb::Atom *> ribose_atoms; // in a particular order: (O4', C1', C2', C3', C4')
    FCXXCoord ribose_centre;
    int idx;
-   FCXXCoord normal;
-   FCXXCoord centre;
-   double radius;
-    static std::vector<std::pair<int, int> >bondingPattern;
+   static std::vector<std::pair<int, int> >bondingPattern;
 };
 
 // one of these for every segment

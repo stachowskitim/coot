@@ -116,7 +116,7 @@ public:
          if (ele == " H") return 0.5f;
          std::string res_name = r->GetResName();
          if (res_name == "HOH")
-            return 2.6f;
+            return 2.0f;
          if (res_name == "CA")
             return 4.0f;
          if (res_name == "MG")
@@ -139,6 +139,13 @@ public:
       if (make_fat_atom)
          radius_scale = 6.0;
       if (radius_scale > 6.0) radius_scale = 6.0;
+   }
+
+   void set_radius_scale_for_atom_with_no_dictionary(mmdb::Atom *at) {
+      // 20230224-PE if there is no dictionary, then we want fat atoms...
+      // ... but not as fat as before - because, after the discussion with Harry,
+      // we also want bond-by-distance for these residues/ligands
+      radius_scale = 4.0;
    }
 
 };

@@ -40,6 +40,7 @@
 #include "rama-plot-phi-psi.hh"
 
 #include "pli/sdf-interface-for-export.hh"
+#include "ligand/side-chain-densities.hh"
 
 #include "add-terminal-residue.hh"
 #include "molecules-container.hh"
@@ -194,6 +195,15 @@ coot::molecule_t::cid_to_residues(const std::string &atom_selection_cids) const 
 
    return v;
 }
+
+// can return null
+mmdb::Residue *
+coot::molecule_t::get_residue(const std::string &residue_cid) const {
+
+   mmdb::Residue *residue_p = cid_to_residue(residue_cid);
+   return residue_p;
+}
+
 
 
 
@@ -826,7 +836,7 @@ coot::molecule_t::full_atom_spec_to_atom_index(const std::string &chain,
    mmdb::PPAtom local_SelAtom;
    atom_sel.mol->GetSelIndex(selHnd, local_SelAtom, nSelAtoms);
 
-   if (false)
+   if (true)
       std::cout << "DEBUG:: full_atom_spec_to_atom_index() for :" << chain << ": "
                 << resno << " :" << insertion_code << ": :"
                 << atom_name << ": :" << alt_conf << ": finds " << nSelAtoms <<  " atoms\n";
@@ -907,6 +917,11 @@ bool
 coot::molecule_t::movable_atom(mmdb::Atom *mol_atom, bool replace_coords_with_zero_occ_flag) const {
 
    // std::cout << "debug:: movable_atom() called with atom " << mol_atom << std::endl;
+
+   if (! mol_atom) {
+      std::cout << "ERROR:: null mol_atom in movable_atom()" << std::endl;
+      return false;
+   }
 
    bool m = true;
 
@@ -997,7 +1012,7 @@ coot::molecule_t::replace_coords(const atom_selection_container_t &asc,
                      // Perhaps the calling function should make the backup?
                      // Let's presume so.
 
-   if (false) {
+   if (true) {
       std::cout << "DEBUG:: --------------- replace_coords replacing "
                 << asc.n_selected_atoms << " atoms " << std::endl;
       for (int i=0; i<asc.n_selected_atoms; i++) {
@@ -1078,7 +1093,7 @@ coot::molecule_t::replace_coords(const atom_selection_container_t &asc,
             }
          } else {
 
-            if (false)
+            if (true)
                std::cout << "DEBUG:: asc.UDDOldAtomIndexHandle is "
                          << asc.UDDOldAtomIndexHandle << " using full atom spec to atom index..."
                          << std::endl;
@@ -1089,7 +1104,11 @@ coot::molecule_t::replace_coords(const atom_selection_container_t &asc,
                                                std::string(atom->name),
                                                std::string(atom->altLoc));
 
-            // std::cout << "full_atom_spec_to_atom_index() returned " << idx << " for " << coot::atom_spec_t(atom) << std::endl;
+            std::cout << "full_atom_spec_to_atom_index() returned " << idx << " for " << coot::atom_spec_t(atom) << std::endl;
+            if (idx != -1) {
+               mmdb::Atom *mol_atom = atom_sel.atom_selection[idx];
+               std::cout << "mol_atom " << coot::atom_spec_t(mol_atom) << std::endl;
+            }
 
             if (idx == -1) {
                std::cout << "DEBUG:: idx: " << idx << "\n";
@@ -1115,7 +1134,7 @@ coot::molecule_t::replace_coords(const atom_selection_container_t &asc,
                   atom_occ = mol_atom->occupancy;
 
                   // OK, one more go.  We have an occupancy of 31 or -31
-                  // say.  Now, the alt conf atoms has been immmediately
+                  // say.  Now, the alt conf atoms has been immediately
                   // added with the old occupancy for the actual FVAR number
                   // - this happens before we get to twiddle the occupancy
                   // slider.  So here we have to find out the index of the
@@ -1170,8 +1189,11 @@ coot::molecule_t::replace_coords(const atom_selection_container_t &asc,
             // "don't change alt confs" mode
 
             if (idx != -1 ) {
-               if (idx <= atom_sel.n_selected_atoms) {
+               if (idx < atom_sel.n_selected_atoms) { // 20240724-PE was <= !
                   mmdb::Atom *mol_atom = atom_sel.atom_selection[idx];
+                  if (! mol_atom) {
+                     std::cout << "ooops:: mol_atom is null in replace_coords()" << std::endl;
+                  }
                   bool is_movable_atom = movable_atom(mol_atom, replace_coords_with_zero_occ_flag);
                   if (is_movable_atom) {
                      if (debug) { // debug
@@ -1192,7 +1214,8 @@ coot::molecule_t::replace_coords(const atom_selection_container_t &asc,
                      n_atom++;
                   }
                } else {
-                  std::cout << "Trapped error! idx " << idx << " but atom_sel.n_selected_atoms " << atom_sel.n_selected_atoms
+                  std::cout << "ERROR:: Trapped error! in replace_coords() late block: idx "
+                            << idx << " but atom_sel.n_selected_atoms " << atom_sel.n_selected_atoms
                             << std::endl;
                }
             } else {
@@ -1347,7 +1370,7 @@ coot::molecule_t::get_atom(const coot::atom_spec_t &atom_spec) const {
 
 glm::vec4
 coot::molecule_t::colour_holder_to_glm(const coot::colour_holder &ch) const {
-   return glm::vec4(ch.red, ch.green, ch.blue, 1.0f);
+   return glm::vec4(ch.red, ch.green, ch.blue, ch.alpha);
 }
 
 #include "utils/dodec.hh"
@@ -1658,11 +1681,47 @@ coot::molecule_t::backrub_rotamer(const std::string &chain_id, int res_no,
                                   const clipper::Xmap<float> &xmap_in,
                                   const coot::protein_geometry &pg) {
 
+   // this doesn't check alt conf - perhaps it should.
+   auto move_atoms = [] (const minimol::residue &mres, mmdb::Residue *r) {
+      for(const auto &atom : mres.atoms) {
+         int n_atoms = 0;
+         mmdb::Atom **residue_atoms = 0;
+         r->GetAtomTable(residue_atoms, n_atoms);
+         for (int i=0; i<n_atoms; i++) {
+            mmdb::Atom *at = residue_atoms[i];
+            std::string atom_name(at->GetAtomName());
+            if (atom_name == atom.name) {
+               at->x = atom.pos.x();
+               at->y = atom.pos.y();
+               at->z = atom.pos.z();
+            }
+         }
+      }
+   };
+
+   auto move_backrub_atoms = [move_atoms] (mmdb::Residue *prev_res,
+                                 mmdb::Residue *this_res,
+                                 mmdb::Residue *next_res,
+                                 const minimol::fragment &frag) {
+      for (mmdb::Residue *r : {prev_res, this_res, next_res}) {
+         if (r) {
+            std::string chain_id;
+            int res_no = r->GetSeqNum();
+            const minimol::residue &mres = frag[res_no];
+            int n_atoms = mres.atoms.size();
+            // std::cout << "found " << n_atoms << " atoms in minimol residue for " << res_no << std::endl;
+            if (n_atoms > 0) {
+               move_atoms(mres, r);
+            }
+         }
+      }
+   };
+
    bool status = false;
    float score = -1;
    bool refinement_move_atoms_with_zero_occupancy_flag = true; // pass this?
 
-   std::cout << "debug:: molecule_t::backrub_rotamer() starts " << chain_id << " " << res_no << std::endl;
+   // std::cout << "debug:: molecule_t::backrub_rotamer() at " << chain_id << " " << res_no << std::endl;
 
    residue_spec_t res_spec(chain_id, res_no, ins_code);
    mmdb::Residue *res = get_residue(res_spec);
@@ -1691,10 +1750,12 @@ coot::molecule_t::backrub_rotamer(const std::string &chain_id, int res_no,
             // std::cout << "------------ calling br.search()" << std::endl;
             std::pair<coot::minimol::molecule,float> m = br.search(restraints);
             std::vector<coot::atom_spec_t> baddie_waters = br.waters_for_deletion();
-            score = m.second;
-            status = true;
-            atom_selection_container_t fragment_asc = make_asc(m.first.pcmmdbmanager());
-            replace_coords(fragment_asc, 0, refinement_move_atoms_with_zero_occupancy_flag);
+            int ich = 0;
+
+            move_backrub_atoms(prev_res, res, next_res, m.first[ich]);
+            status = true; // 20240727-PE oops I deleted this when I wrote move_backrub_atoms()
+                           // and forgot to restore it
+
             if (baddie_waters.size())
                delete_atoms(baddie_waters);
 
@@ -1702,7 +1763,8 @@ coot::molecule_t::backrub_rotamer(const std::string &chain_id, int res_no,
             atom_sel.mol->FinishStructEdit();
          }
          catch (const std::runtime_error &rte) {
-            std::cout << "WARNING:: in backrub_rotamer(): thrown " << rte.what() << " with status " << status << std::endl;
+            std::cout << "WARNING:: in backrub_rotamer(): thrown " << rte.what()
+                      << " with status " << status << std::endl;
          }
          // if we make a backup, then we also make a new modification
          // save_info.new_modification("backrub_rotamer()");
@@ -1712,6 +1774,22 @@ coot::molecule_t::backrub_rotamer(const std::string &chain_id, int res_no,
    }
    return std::pair<bool,float> (status, score);
 }
+
+std::pair<bool,float>
+coot::molecule_t::backrub_rotamer(mmdb::Residue *residue_p,
+                                  const clipper::Xmap<float> &xmap,
+                                  const coot::protein_geometry &pg) {
+
+   std::string alt_conf;
+   return backrub_rotamer(residue_p->GetChainID(),
+                          residue_p->GetSeqNum(),
+                          residue_p->GetInsCode(),
+                          alt_conf,
+                          xmap, pg);
+
+}
+
+
 
 
 int
@@ -3570,7 +3648,7 @@ coot::molecule_t::get_gaussian_surface(float sigma, float contour_level,
                                        float box_radius, float grid_scale, float b_factor) const {
 
    auto colour_holder_to_glm = [] (const coot::colour_holder &ch) {
-      return glm::vec4(ch.red, ch.green, ch.blue, 1.0f);
+      return glm::vec4(ch.red, ch.green, ch.blue, ch.alpha);
    };
 
    coot::simple_mesh_t mesh;
@@ -3584,13 +3662,24 @@ coot::molecule_t::get_gaussian_surface(float sigma, float contour_level,
          const auto &chain_id = chain_ids[i_ch];
          coot::gaussian_surface_t gauss_surf(mol, chain_id, sigma, contour_level, box_radius, grid_scale, b_factor);
          coot::simple_mesh_t gs_mesh = gauss_surf.get_surface();
-         // if get_chain_ids() adds chain_ids in the same way as
-         // fill_default_colour_rules then this will work:
-         if (i_ch < colour_rules.size()) {
-            const std::string &colour = colour_rules[i_ch].second;
-            coot::colour_holder ch(colour); // this is a hex string.
-            glm::vec4 col = colour_holder_to_glm(ch);
-            gs_mesh.change_colour(col);
+
+         // do we have a colour rule to change the colour of that surface?
+         //
+         // This is hacky because in general colour rules are for selection (even down to the atom)
+         // but here we are interested only in colour rules that apply to just a chain
+         // So... I am looking only for colour rules that are for this chain
+         //
+         for (unsigned int icr=0; icr<colour_rules.size(); icr++) {
+            const std::string &colour_rule_cid = colour_rules[icr].first;
+            const std::string &colour          = colour_rules[icr].second;
+            if (std::string("//" + chain_id) == colour_rule_cid ||
+                colour_rule_cid == "/"    ||
+                colour_rule_cid == "//"   ||
+                colour_rule_cid == "/*/*/*/*") {
+               coot::colour_holder ch(colour);
+               glm::vec4 col = colour_holder_to_glm(ch);
+               gs_mesh.change_colour(col);
+            }
          }
          mesh.add_submesh(gs_mesh);
       }
@@ -3825,7 +3914,9 @@ coot::molecule_t::get_symmetry(float symmetry_search_radius, const coot::Cartesi
 coot::molecule_t::rotamer_change_info_t
 coot::molecule_t::change_to_next_rotamer(const coot::residue_spec_t &res_spec, const std::string &alt_conf,
                                          const coot::protein_geometry &pg) {
-   return change_rotamer_number(res_spec, alt_conf, 1, pg);
+
+   auto crni = change_rotamer_number(res_spec, alt_conf, 1, pg);
+   return crni;
 }
 
 //
@@ -3894,6 +3985,7 @@ coot::molecule_t::change_rotamer_number(const coot::residue_spec_t &res_spec, co
             rci.rank = rotamer_number;
             rci.name = rotamers[rotamer_number].rotamer_name();
             rci.richardson_probability = rotamers[rotamer_number].Probability_rich();
+
          }
       } else {
          std::cout << "WARNING:: change_rotamer_number() Failed to get monomer restraints for " << res_type << std::endl;
@@ -3943,11 +4035,14 @@ coot::molecule_t::set_residue_to_rotamer_move_atoms(mmdb::Residue *res, mmdb::Re
       }
    }
 
-   if (i_done) {
-      atom_sel.mol->PDBCleanup(mmdb::PDBCLEAN_SERIAL|mmdb::PDBCLEAN_INDEX);
-      atom_sel.mol->FinishStructEdit();
-      atom_sel = make_asc(atom_sel.mol);
-   }
+   // 20240516-PE I aom only moving atoms - so I don't need any of this:
+   // (it destroys atom_sel and atom_sel.UDDOldAtomIndexHandle)
+   //
+   // if (i_done) {
+      // atom_sel.mol->PDBCleanup(mmdb::PDBCLEAN_SERIAL|mmdb::PDBCLEAN_INDEX);
+      // atom_sel.mol->FinishStructEdit();
+      // atom_sel = make_asc(atom_sel.mol);
+   // }
    return i_done;
 }
 
@@ -4086,7 +4181,7 @@ coot::molecule_t::fix_atom_selection_during_refinement(const std::string &atom_s
 
 // refine all of this molecule - the links and non-bonded contacts will be determined from mol_ref;
 void
-coot::molecule_t::init_all_molecule_refinement(mmdb::Manager *mol_ref, coot::protein_geometry &geom,
+coot::molecule_t::init_all_molecule_refinement(int imol_ref_mol, coot::protein_geometry &geom,
                                                const clipper::Xmap<float> &xmap_in, float map_weight,
                                                ctpl::thread_pool *thread_pool) {
 
@@ -4144,7 +4239,9 @@ coot::molecule_t::init_all_molecule_refinement(mmdb::Manager *mol_ref, coot::pro
    unsigned int n_threads = 8;
    last_restraints->thread_pool(thread_pool, n_threads);
 
-   last_restraints->make_restraints(imol_no, geom, flags, 1, make_trans_peptide_restraints,
+   // user-defined LIG diction ahve been assigned to imol_ref_mol, not this one (this one
+   // is a temporary molecule used only for refinement).
+   last_restraints->make_restraints(imol_ref_mol, geom, flags, 1, make_trans_peptide_restraints,
                                     1.0, do_rama_plot_restraints, true, true, false, pseudos);
 
    if (last_restraints->size() == 0) {
@@ -4327,9 +4424,10 @@ coot::molecule_t::export_model_molecule_as_gltf(const std::string &mode,
 void
 coot::molecule_t::export_molecular_represenation_as_gltf(const std::string &atom_selection_cid,
                                                          const std::string &colour_scheme, const std::string &style,
+                                                         int secondary_structure_usage_flag,
                                                          const std::string &file_name) {
 
-   coot::simple_mesh_t sm = get_molecular_representation_mesh(atom_selection_cid, colour_scheme, style);
+   coot::simple_mesh_t sm = get_molecular_representation_mesh(atom_selection_cid, colour_scheme, style, secondary_structure_usage_flag);
    bool as_binary = true; // test the extension of file_name
    sm.export_to_gltf(file_name, as_binary);
 }
@@ -4367,8 +4465,8 @@ coot::molecule_t::multiply_residue_temperature_factors(const std::string &cid, f
 //
 int
 coot::molecule_t::match_torsions(mmdb::Residue *res_reference,
-                              const std::vector <coot::dict_torsion_restraint_t> &tr_ref_res,
-                              const coot::protein_geometry &geom) {
+                                 const std::vector <coot::dict_torsion_restraint_t> &tr_ref_res,
+                                 const coot::protein_geometry &geom) {
 
    int n_torsions_moved = 0;
    make_backup("match_torsions");
@@ -4432,6 +4530,37 @@ coot::molecule_t::transform_by(const clipper::RTop_orth &rtop, mmdb::Residue *re
 
 
 void
+coot::molecule_t::transform_by(const clipper::RTop_orth &rtop) {
+
+   for(int imod = 1; imod<=atom_sel.mol->GetNumberOfModels(); imod++) {
+      mmdb::Model *model_p = atom_sel.mol->GetModel(imod);
+      if (model_p) {
+         int n_chains = model_p->GetNumberOfChains();
+         for (int ichain=0; ichain<n_chains; ichain++) {
+            mmdb::Chain *chain_p = model_p->GetChain(ichain);
+            int n_res = chain_p->GetNumberOfResidues();
+            for (int ires=0; ires<n_res; ires++) {
+               mmdb::Residue *residue_p = chain_p->GetResidue(ires);
+               if (residue_p) {
+                  int n_atoms = residue_p->GetNumberOfAtoms();
+                  for (int iat=0; iat<n_atoms; iat++) {
+                     mmdb::Atom *at = residue_p->GetAtom(iat);
+                     if (! at->isTer()) {
+                        clipper::Coord_orth pos = coot::co(at);
+                        clipper::Coord_orth p2 = pos.transform(rtop);
+                        at->x = p2.x();
+                        at->y = p2.y();
+                        at->z = p2.z();
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+
+void
 coot::molecule_t::print_secondary_structure_info() const {
 
    for(int imod = 1; imod<=atom_sel.mol->GetNumberOfModels(); imod++) {
@@ -4454,4 +4583,148 @@ coot::molecule_t::rdkit_mol(const std::string &ligand_cid) {
    return mol;
 }
 #endif
+
+
+//! get the median temperature factor for the model
+//! @return a negative number on failure.
+float
+coot::molecule_t::get_median_temperature_factor() const {
+
+   float b = coot::util::median_temperature_factor(atom_sel.atom_selection, atom_sel.n_selected_atoms, 2.0, 2222.2, false, false);
+   return b;
+
+}
+
+
+#include "utils/coot-fasta.hh"
+
+void
+coot::molecule_t::associate_sequence_with_molecule(const std::string &chain_id, const std::string &sequence) {
+
+   // input_sequences.push_back(std::make_pair(chain_id, sequence));
+   fasta f(chain_id, sequence, fasta::SIMPLE_STRING);
+   multi_fasta_seq.add(f);
+
+}
+
+//! try to fit all of the sequences to all of the chains
+void
+coot::molecule_t::assign_sequence(const clipper::Xmap<float> &xmap, const coot::protein_geometry &geom) {
+
+   auto apply_sequence = [] (const std::vector<mmdb::Residue *> &residues,
+                             const std::string &sequence) {
+      // caller checks that the lengths match
+      for (unsigned int ires=0; ires<residues.size(); ires++) {
+         mmdb::Residue *residue_p = residues[ires];
+         char letter = sequence[ires];
+         std::string new_residue_type = coot::util::single_letter_to_3_letter_code(letter);
+         coot::util::mutate(residue_p, new_residue_type);
+      }
+   };
+
+   auto apply_fasta_multi_to_fragment = [apply_sequence, geom, this] (mmdb::Manager *mol,
+                                            const std::string &chain_id,
+                                             int resno_start,
+                                             int resno_end,
+                                             const clipper::Xmap<float> &xmap,
+                                             const coot::fasta_multi &fam) {
+
+      std::vector<mmdb::Residue *> residues;
+      side_chain_densities scd;
+      unsigned int n_sequences = fam.size();
+      for (unsigned int idx=0; idx<n_sequences; idx++) {
+         const std::string &sequence = fam[idx].sequence;
+         const std::string &name = fam[idx].name;
+         std::pair<std::string, std::vector<mmdb::Residue *> > a_run_of_residues =
+         scd.setup_test_sequence(mol, chain_id, resno_start, resno_end, xmap);
+         if (a_run_of_residues.first.empty()) {
+            bool print_slider_results = true;
+            scd.test_sequence(a_run_of_residues.second, xmap, name, sequence, print_slider_results);
+            bool only_probable = false;
+            bool print_sequencing_solutions = true;
+            coot::side_chain_densities::results_t new_sequence_result = scd.get_result(only_probable, print_sequencing_solutions);
+            std::string new_sequence = new_sequence_result.sequence;
+            std::cout << "new sequence  " << new_sequence << std::endl;
+            int offset = new_sequence_result.offset;
+            if (! new_sequence.empty()) {
+               int sl = new_sequence.length();
+               int resno_count = resno_end - resno_start + 1;
+               std::cout << "compare sl " << sl << " resno_count " << resno_count << std::endl;
+               if (sl == resno_count) {
+                  std::cout << "..... now apply the sequence" << std::endl;
+                  residues = a_run_of_residues.second;
+                  apply_sequence(residues, new_sequence);
+               }
+            }
+         } else {
+            std::cout << "Error when generating a run-of-residues" << std::endl;
+            std::cout << " " << a_run_of_residues.first << std::endl;
+         }
+      }
+      return residues;
+   };
+
+   coot::side_chain_densities scd;
+   mmdb::Manager *mol = atom_sel.mol;
+   int imod = 1;
+   mmdb::Model *model_p = mol->GetModel(imod);
+   if (model_p) {
+      int n_chains = model_p->GetNumberOfChains();
+      for (int ichain=0; ichain<n_chains; ichain++) {
+         mmdb::Chain *chain_p = model_p->GetChain(ichain);
+         std::string chain_id(chain_p->GetChainID());
+         int nres = 0;
+         mmdb::PResidue *residue_table = 0;
+         chain_p->GetResidueTable(residue_table, nres);
+         if (nres > 10) {
+             int idx_end = nres - 1;
+             int resno_start = residue_table[0]->GetSeqNum();
+             int resno_end   = residue_table[idx_end]->GetSeqNum();
+
+            {
+               atom_sel.delete_atom_selection();
+               std::vector<mmdb::Residue *> residues =
+                  apply_fasta_multi_to_fragment(atom_sel.mol, chain_id, resno_start, resno_end, xmap, multi_fasta_seq);
+               atom_sel.regen_atom_selection();
+               // backrub rotamer (actully replace_coords()) uses UDDOldAtomIndexHandle. I don't understand why
+               if (false)
+                  std::cout << "#### after regen_atom_selection() n_selected_atoms " << atom_sel.n_selected_atoms
+                            << " and UDDAtomIndexHandle is " << atom_sel.UDDAtomIndexHandle << std::endl;
+               atom_sel.mol->PDBCleanup(mmdb::PDBCLEAN_SERIAL|mmdb::PDBCLEAN_INDEX);
+               atom_sel.mol->FinishStructEdit();
+               util::pdbcleanup_serial_residue_numbers(atom_sel.mol);
+
+               bool debug_atom_indexing = false;
+               if (debug_atom_indexing) {
+                  for (int i = 0; i < atom_sel.n_selected_atoms; i++) {
+                     int idx = -1;
+                     mmdb::Atom *at = atom_sel.atom_selection[i];
+                     if (at->GetUDData(atom_sel.UDDAtomIndexHandle, idx) == mmdb::UDDATA_Ok) {
+                        std::cout << "OK " << i << " " << idx << std::endl;
+                     } else {
+                        std::cout << "udd lookup failure for i " << i << std::endl;
+                     }
+                  }
+               }
+
+               for (unsigned int ires=0; ires<residues.size(); ires++) {
+                  if (false)
+                     std::cout << "#### after regen_atom_selection()"
+                              << " mol " << atom_sel.mol
+                              << " n_selected_atoms " << atom_sel.n_selected_atoms
+                              << " atom_selection " << atom_sel.atom_selection
+                              << " and UDDOldAtomIndexHandle is " << atom_sel.UDDOldAtomIndexHandle << std::endl;
+                  mmdb::Residue *residue_p = residues[ires];
+                  this->backrub_rotamer(residue_p, xmap, geom);
+               }
+            }
+
+         } else {
+            std::cout << "Chain must have at least 10 residue" << std::endl;
+         }
+      }
+   }
+   write_coordinates("test-add-sc.pdb");
+}
+
 

@@ -46,7 +46,7 @@ glm::vec3 coord_orth_to_glm(const clipper::Coord_orth &co) {
 
 glm::vec4
 colour_holder_to_glm(const coot::colour_holder &ch) {
-   return glm::vec4(ch.red, ch.green, ch.blue, 1.0f);
+   return glm::vec4(ch.red, ch.green, ch.blue, ch.alpha);
 }
 
 void
@@ -78,6 +78,37 @@ meshed_generic_display_object::add_line(const coot::colour_holder &colour,
 }
 
 void
+meshed_generic_display_object::add_lines(std::vector<line_info_t> &liv) {
+
+   auto vnc_vertex_to_generic_vertex = [] (const coot::api::vnc_vertex &v) {
+      return s_generic_vertex(v.pos, v.normal, v.color);
+   };
+
+   auto vnc_vertex_vector_to_generic_vertex_vector = [vnc_vertex_to_generic_vertex] (const std::vector<coot::api::vnc_vertex> &vv) {
+      std::vector<s_generic_vertex> vo(vv.size());
+      for (unsigned int i=0; i<vv.size(); i++)
+         vo[i] = vnc_vertex_to_generic_vertex(vv[i]);
+      return vo;
+   };
+
+   for (unsigned int i=0; i<liv.size(); i++) {
+      const auto &li = liv[i];
+      glm::vec4 col = colour_holder_to_glm(li.colour);
+      glm::vec3 start = coord_orth_to_glm(li.position_start);
+      glm::vec3 end   = coord_orth_to_glm(li.position_end);
+      float bl = glm::distance(start, end);
+      auto cart_pair = std::make_pair(start, end);
+      cylinder c(cart_pair, li.radius, li.radius, bl, col);
+      c.add_flat_start_cap();
+      c.add_flat_end_cap();
+      std::vector<s_generic_vertex> converted_vertices = vnc_vertex_vector_to_generic_vertex_vector(c.vertices);
+      mesh.import(converted_vertices, c.triangles);
+   }
+
+}
+
+
+void
 meshed_generic_display_object::add_sphere(const meshed_generic_display_object::sphere_t &sphere) {
 
    unsigned int num_subdivisions = 2;
@@ -104,11 +135,28 @@ meshed_generic_display_object::add_point(const coot::colour_holder &colour_in,
    oi.colour = colour_in;
    info.push_back(oi);
    glm::vec3 position_glm = coord_orth_to_glm(coords_in);
-   std::pair<std::vector<s_generic_vertex>, std::vector<g_triangle> >
-      oct = wrapped_make_octasphere(num_subdivisions, position_glm, radius, col);
-   std::cout << "::add_point adding " << oct.first.size() << " " << oct.second.size() << " vertices and triangles "
-             << std::endl;
+   std::pair<std::vector<s_generic_vertex>, std::vector<g_triangle> > oct =
+       wrapped_make_octasphere(num_subdivisions, position_glm, radius, col);
+   if (false)
+      std::cout << "::add_point adding " << oct.first.size() << " " << oct.second.size()
+                << " vertices and triangles " << std::endl;
    mesh.import(oct);
+
+}
+
+void
+meshed_generic_display_object::add_points(std::vector<point_info_t> &piv, unsigned int num_subdivisions) {
+
+   for (unsigned int i=0; i<piv.size(); i++) {
+      const auto &pi = piv[i];
+      glm::vec3 position_glm = coord_orth_to_glm(pi.position);
+      float radius = 0.03 * static_cast<float>(pi.width);
+      glm::vec4 col = colour_holder_to_glm(pi.colour);
+      // std::cout << "in add_points() with colour " << glm::to_string(col) << std::endl;
+      std::pair<std::vector<s_generic_vertex>, std::vector<g_triangle> > oct =
+         wrapped_make_octasphere(num_subdivisions, position_glm, radius, col);
+      mesh.import(oct);
+   }
 
 }
 

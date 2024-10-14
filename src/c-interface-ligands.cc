@@ -1945,7 +1945,7 @@ PyObject *comp_id_to_name_py(const char *comp_id) {
 /*  ----------------------------------------------------------------------- */
 //                  animated ligand interactions
 /*  ----------------------------------------------------------------------- */
-void add_animated_ligand_interaction(int imol, const coot::fle_ligand_bond_t &lb) {
+void add_animated_ligand_interaction(int imol, const pli::fle_ligand_bond_t &lb) {
 
    if (is_valid_model_molecule(imol)) {
       graphics_info_t::molecules[imol].add_animated_ligand_interaction(lb);
@@ -3314,7 +3314,7 @@ void display_residue_hydrogen_bond_atom_status_using_dictionary(int imol, std::s
 			  res_no, ins_code.c_str(),
 			  "*", "*", "*", "*");
 
-	 std::pair<bool, int> status = hb.check_hb_status(SelHnd_lig, mol, *g.Geom_p());
+	 std::pair<bool, int> status = hb.check_hb_status(SelHnd_lig, mol, *g.Geom_p(), imol);
 	 if (! status.first) {
 	    std::cout << "WARNING:: ===================== no HB status on atoms of ligand! ======="
 		      << "=========" << std::endl;

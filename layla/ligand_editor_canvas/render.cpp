@@ -46,8 +46,14 @@ Renderer::Renderer(cairo_t* cr, PangoLayout* pango_layout) {
 }
 #else // __EMSCRIPTEN__ defined
 // Lhasa-specific includes/definitions
+Renderer::Renderer(emscripten::val text_measurement_function, Renderer::TextMeasurementCache& cache) 
+ :Renderer(text_measurement_function) {
+    this->tm_cache = &cache;
+}
+
 Renderer::Renderer(emscripten::val text_measurement_function) {
     this->text_measurement_function = text_measurement_function;
+    this->tm_cache = nullptr;
     this->position.x = 0.f;
     this->position.y = 0.f;
     this->style.line_width = 1.0f;
@@ -55,22 +61,13 @@ Renderer::Renderer(emscripten::val text_measurement_function) {
     this->style.color.g = 0.f;
     this->style.color.b = 0.f;
     this->style.color.a = 1.f;
-    this->drawing_structure_stack.push_back(&this->drawing_commands);
 }
 
-bool Renderer::DrawingCommand::is_path() {
+bool Renderer::DrawingCommand::is_path() const {
     return std::holds_alternative<Renderer::Path>(this->content);
 }
 
-bool Renderer::DrawingCommand::is_arc() {
-    return std::holds_alternative<Renderer::Arc>(this->content);
-}
-
-bool Renderer::DrawingCommand::is_line() {
-    return std::holds_alternative<Renderer::Line>(this->content);
-}
-
-bool Renderer::DrawingCommand::is_text() {
+bool Renderer::DrawingCommand::is_text() const {
     return std::holds_alternative<Renderer::Text>(this->content);
 }
 
@@ -78,20 +75,72 @@ const Renderer::Path& Renderer::DrawingCommand::as_path() const {
     return std::get<Renderer::Path>(this->content);
 }
 
-const Renderer::Arc& Renderer::DrawingCommand::as_arc() const {
-    return std::get<Renderer::Arc>(this->content);
-}
-
-const Renderer::Line& Renderer::DrawingCommand::as_line() const {
-    return std::get<Renderer::Line>(this->content);
+Renderer::Path& Renderer::DrawingCommand::as_path_mut() {
+    return std::get<Renderer::Path>(this->content);
 }
 
 const Renderer::Text& Renderer::DrawingCommand::as_text() const {
     return std::get<Renderer::Text>(this->content);
 }
 
+const Renderer::Line& Renderer::PathElement::as_line() const {
+    return std::get<Renderer::Line>(this->content);
+}
+
+const Renderer::Arc& Renderer::PathElement::as_arc() const {
+    return std::get<Renderer::Arc>(this->content);
+}
+
+bool Renderer::PathElement::is_line() const {
+    return std::holds_alternative<Renderer::Line>(this->content);
+}
+
+bool Renderer::PathElement::is_arc() const {
+    return std::holds_alternative<Renderer::Arc>(this->content);
+}
+
 std::vector<Renderer::DrawingCommand> Renderer::get_commands() const {
     return this->drawing_commands;
+}
+
+const std::vector<Renderer::PathElement>& Renderer::Path::get_elements() const {
+    return this->elements;
+}
+
+Renderer::Path Renderer::create_new_path() const {
+    Path ret;
+    ret.has_fill = false;
+    ret.initial_point = this->position;
+    ret.has_stroke = false;
+    ret.closed = false;
+    return ret;
+}
+
+Renderer::Path& Renderer::top_path() {
+    if(this->drawing_commands.empty()) {
+        this->drawing_commands.push_back({this->create_new_path()});
+    }
+    auto& last_el = this->drawing_commands.back();
+    if(last_el.is_path()) {
+        const auto& pth = last_el.as_path();
+        if(!pth.closed) {
+            return last_el.as_path_mut();
+        }
+    }
+    this->drawing_commands.push_back({this->create_new_path()});
+    return this->drawing_commands.back().as_path_mut();
+}
+
+Renderer::Path* Renderer::top_path_if_exists() {
+    if(this->drawing_commands.empty()) {
+        return nullptr;
+    }
+    auto& last_el = this->drawing_commands.back();
+    if(last_el.is_path()) {
+        return &last_el.as_path_mut();
+    } else {
+        return nullptr;
+    }
 }
 
 #endif // Emscripten defined
@@ -149,6 +198,9 @@ void Renderer::move_to(double x, double y) {
     #else // __EMSCRIPTEN__ defined
     this->position.x = x;
     this->position.y = y;
+    // Should it always do this?
+    // Cairo docs say so.
+    this->new_sub_path();
     #endif
 }
 
@@ -157,12 +209,12 @@ void Renderer::line_to(double x, double y) {
     cairo_line_to(cr, x, y);
     #else // __EMSCRIPTEN__ defined
     Line line;
-    line.style = this->style;
     line.start = this->position;
     line.end.x = x;
     line.end.y = y;
-    auto* structure_ptr = *this->drawing_structure_stack.rbegin();
-    structure_ptr->push_back(DrawingCommand{line});
+    graphene_point_t final_pos = line.end;
+    this->top_path().elements.push_back({line});
+    this->position = final_pos;
     #endif
 }
 
@@ -176,8 +228,7 @@ void Renderer::arc(double x, double y, double radius, double angle_one, double a
     arc.radius = radius;
     arc.angle_one = angle_one;
     arc.angle_two = angle_two;
-    auto* structure_ptr = *this->drawing_structure_stack.rbegin();
-    structure_ptr->push_back(DrawingCommand{arc});
+    this->top_path().elements.push_back({arc});
     #endif
 }
 
@@ -185,7 +236,21 @@ void Renderer::fill() {
     #ifndef __EMSCRIPTEN__
     cairo_fill(cr);
     #else // __EMSCRIPTEN__ defined
-    #warning TODO: fill() for Lhasa
+    auto* path = this->top_path_if_exists();
+    if(!path) {
+        g_warning("fill() called without a path.");
+        return;
+    }
+    if(path->elements.empty()) {
+        g_warning("fill() called with an empty path.");
+        //return;
+    }
+    // Fill closes all opened subpaths I guess?
+    path->closed = true;
+    // Should I do anything else with it?
+
+    path->has_fill = true;
+    path->fill_color = this->style.color;
     #endif
 }
 
@@ -193,7 +258,8 @@ void Renderer::stroke() {
     #ifndef __EMSCRIPTEN__
     cairo_stroke(cr);
     #else // __EMSCRIPTEN__ defined
-    #warning TODO: stroke() for Lhasa
+    this->stroke_preserve();
+    this->new_path();
     #endif
 }
 
@@ -201,7 +267,17 @@ void Renderer::stroke_preserve() {
     #ifndef __EMSCRIPTEN__
     cairo_stroke_preserve(cr);
     #else // __EMSCRIPTEN__ defined
-    #warning TODO: stroke_preserve() for Lhasa
+    auto* path = this->top_path_if_exists();
+    if(!path) {
+        g_warning("stroke() called without a path.");
+        return;
+    }
+    if(path->elements.empty()) {
+        g_warning("stroke() called with an empty path.");
+        //return;
+    }
+    path->has_stroke = true;
+    path->stroke_style = this->style;
     #endif
 }
 
@@ -209,15 +285,57 @@ void Renderer::new_path() {
     #ifndef __EMSCRIPTEN__
     cairo_new_path(cr);
     #else // __EMSCRIPTEN__ defined
-    #warning TODO: new_path() for Lhasa
+    auto* path = this->top_path_if_exists();
+    if(path) {
+        // if(!path->closed) {
+        //     // Reset the path
+        //     *path = this->create_new_path();
+        // } else {
+            // Actually creates another new path
+            this->close_path_inner();
+        // }
+    }
+    // Is this really what the function ought to do?
     #endif
 }
+
+#ifdef __EMSCRIPTEN__
+void Renderer::close_path_inner() {
+    // 2. Close the sub-path
+    auto* path = this->top_path_if_exists();
+    if(path) {
+        if(!path->closed) {
+            path->closed = true;
+        } else {
+            // Technically, just creating new path, means that the previous one is done with.
+            this->drawing_commands.push_back({this->create_new_path()});
+        }
+    }
+
+    // 3. 
+    // To quote the docs:
+    // "The behavior of cairo_close_path() is distinct from simply calling cairo_line_to() 
+    // with the equivalent coordinate in the case of stroking. When a closed sub-path is stroked, 
+    // there are no caps on the ends of the sub-path. Instead, there is a line join connecting 
+    // the final and initial segments of the sub-path."
+    //
+    // Now, I don't exactly now what that means for me.
+    // 
+}
+#endif
 
 void Renderer::close_path() {
     #ifndef __EMSCRIPTEN__
     cairo_close_path(cr);
     #else // __EMSCRIPTEN__ defined
-    #warning TODO: close_path() for Lhasa
+    // // 1. Add a line to the beginning of the path
+    auto* path = this->top_path_if_exists();
+    if(path) {
+        if(!path->closed) {
+            this->line_to(path->initial_point.x, path->initial_point.y);
+        }
+        this->close_path_inner();
+    }
     #endif
 }
 
@@ -225,7 +343,15 @@ void Renderer::new_sub_path() {
     #ifndef __EMSCRIPTEN__
     cairo_new_sub_path(cr);
     #else // __EMSCRIPTEN__ defined
-    #warning TODO: new_sub_path() for Lhasa
+    auto* path = this->top_path_if_exists();
+    // I'm not sure if that's what the function is supposed to do.
+    if(path) {
+        if(!path->closed) {
+            path->closed = true;
+        }
+    }
+    this->drawing_commands.push_back({this->create_new_path()});
+
     #endif
 }
 
@@ -349,6 +475,30 @@ std::string Renderer::text_span_to_pango_markup(const TextSpan& span, const std:
     }
     return ret;
 }
+#else
+std::optional<Renderer::TextSize> Renderer::TextMeasurementCache::lookup_span(const Renderer::TextSpan& text) const {
+    return this->lookup_span(std::hash<TextSpan>{}(text));
+}
+
+std::optional<Renderer::TextSize> Renderer::TextMeasurementCache::lookup_span(Renderer::TextMeasurementCache::hash_t span_hash) const {
+    auto it = this->cache.find(span_hash);
+    if(it != this->cache.end()) {
+        return it->second;
+    }
+    return std::nullopt;
+}
+
+void Renderer::TextMeasurementCache::add(Renderer::TextMeasurementCache::hash_t span_hash, Renderer::TextSize value) {
+    this->cache.emplace(span_hash, value);
+}
+
+void Renderer::TextMeasurementCache::add(const Renderer::TextSpan& text, Renderer::TextSize value) {
+    this->add(std::hash<TextSpan>{}(text), value);
+}
+std::size_t Renderer::TextMeasurementCache::size() const {
+    return this->cache.size();
+}
+
 #endif
 
 Renderer::TextSize Renderer::measure_text(const Renderer::TextSpan& text) {
@@ -359,6 +509,14 @@ Renderer::TextSize Renderer::measure_text(const Renderer::TextSpan& text) {
     pango_layout_get_pixel_size(this->pango_layout, &ret.width, &ret.height);
     return ret;
     #else // __EMSCRIPTEN__ defined
+    std::optional<TextMeasurementCache::hash_t> text_hash;
+    if(this->tm_cache) {
+        text_hash = std::hash<TextSpan>{}(text);
+        auto cached_opt = this->tm_cache->lookup_span(text_hash.value());
+        if(cached_opt.has_value()) {
+            return cached_opt.value();
+        }
+    }
     // return {0,0};
     // The try..catch doesn't work for me.
     // try {
@@ -370,10 +528,15 @@ Renderer::TextSize Renderer::measure_text(const Renderer::TextSpan& text) {
     // g_info("Wrapper text has been built.");
     emscripten::val result = this->text_measurement_function(wtext);
     // g_info("Got result.");
-    return result.as<TextSize>();
+    auto ret = result.as<TextSize>();
     // } catch(...) {
     //     return {0,0};
     // }
+    if(this->tm_cache) {
+        this->tm_cache->add(text_hash.value(), ret);
+        g_debug("TextSpan added to cache. Cache entries: %lu", this->tm_cache->size());
+    }
+    return ret;
     #endif
 }
 
@@ -394,8 +557,7 @@ void Renderer::show_text(const Renderer::TextSpan& text_span) {
         // text.style
     }
     text.origin = this->position;
-    auto* structure_ptr = *this->drawing_structure_stack.rbegin();
-    structure_ptr->push_back(DrawingCommand{text});
+    this->drawing_commands.push_back(DrawingCommand{text});
     #endif
 }
 
@@ -503,7 +665,7 @@ std::pair<unsigned int,graphene_rect_t> MoleculeRenderContext::render_atom(const
     #else
     atom_span.style.size = render_mode != DisplayMode::AtomIndices ? "medium" : "small";
     #endif
-    atom_span.style.weight = atom.highlighted ? "bold" : "normal";
+    atom_span.style.weight = atom.highlight != 0 ? "bold" : "normal";
 
     // Span for the atom symbol - solely.
     // This allows us to measure the size of the atom's symbol 
@@ -622,13 +784,16 @@ void MoleculeRenderContext::draw_atoms() {
 }
 
 void MoleculeRenderContext::process_atom_highlight(const Atom& atom) {
-    if(atom.highlighted) {
-        //ren.move_to(atom.x * scale_factor + x_offset + ATOM_HITBOX_RADIUS, atom.y * scale_factor + y_offset);
+    auto highlight = CanvasMolecule::determine_dominant_highlight(atom.highlight);
+    if(highlight) {
+        auto [r, g, b] = CanvasMolecule::hightlight_to_rgb(*highlight);
         ren.new_sub_path();
-        ren.set_source_rgb(0.0, 1.0, 0.5);
+        // Go to the center of the atom
+        //ren.move_to(atom.x * scale_factor + x_offset + CanvasMolecule::ATOM_HITBOX_RADIUS, atom.y * scale_factor + y_offset);
+        ren.set_source_rgb(r, g, b);
         ren.arc(atom.x * scale_factor + x_offset, atom.y * scale_factor + y_offset, CanvasMolecule::ATOM_HITBOX_RADIUS, 0, M_PI * 2.0);
         ren.stroke_preserve();
-        ren.set_source_rgba(0.0, 1.0, 0.5, 0.5);
+        ren.set_source_rgba(r, g, b, 0.5);
         ren.fill();
     }
 }
@@ -1076,9 +1241,11 @@ void MoleculeRenderContext::draw_centered_double_bond(const CanvasMolecule::Bond
 
 void MoleculeRenderContext::draw_bonds() {
     for(const auto& bond: canvas_molecule.bonds) {
-        if(bond->highlighted) {
+        auto highlight = CanvasMolecule::determine_dominant_highlight(bond->highlight);
+        if(highlight) {
             ren.set_line_width(4.0);
-            ren.set_source_rgb(0.0, 1.0, 0.5);
+            auto [r, g, b] = CanvasMolecule::hightlight_to_rgb(*highlight);
+            ren.set_source_rgb(r, g, b);
         } else {
             ren.set_line_width(2.0);
             ren.set_source_rgb(0.0, 0.0, 0.0);

@@ -63,12 +63,14 @@ enum class DisplayMode: unsigned char {
     AtomNames
 };
 
+typedef std::map<unsigned int, std::string> SmilesMap;
+
 const char* display_mode_to_string(DisplayMode mode) noexcept;
 std::optional<DisplayMode> display_mode_from_string(const char*) noexcept;
 
 /// Drawing-friendly representation of RDKit molecule
 class CanvasMolecule {
-    // Rendering is done via a separate class 
+    // Rendering is done via a separate class
     // for the sake of code organization
     friend class impl::MoleculeRenderContext;
     public:
@@ -91,12 +93,21 @@ class CanvasMolecule {
         DarkBlue
         // are there more colors?
     };
-    
-    struct Atom {
+
+    typedef unsigned char highlight_t;
+    enum class HighlightType: highlight_t {
+        Hover = 1,
+        Edition = 2,
+        Error = 4,
+        // A concept for the future
+        Selection = 8
+    };
+
+   struct Atom {
         std::string symbol;
         std::optional<std::string> name;
-        
-        /// Appendix represents optional elements that appear after atom's symbol,
+
+      /// Appendix represents optional elements that appear after atom's symbol,
         /// e.g. charge, hydrogens
         struct Appendix {
             /// Ionization
@@ -120,7 +131,8 @@ class CanvasMolecule {
         float y;
         /// Corresponds to RDKit atom index
         unsigned int idx;
-        bool highlighted;
+        /// Highlight bitmask
+        highlight_t highlight;
     };
     enum class BondType: unsigned char {
         Single,
@@ -146,14 +158,14 @@ class CanvasMolecule {
     struct Bond {
         BondType type;
         BondGeometry geometry;
-        /// Set for double bonds. 
+        /// Set for double bonds.
         /// It's the proportion of the bond's original length
-        /// by which the parallel segment of the bond 
+        /// by which the parallel segment of the bond
         /// has to be shortend from the "first" side.
         std::optional<float> first_shortening_proportion;
-        /// Set for double bonds. 
+        /// Set for double bonds.
         /// It's the proportion of the bond's original length
-        /// by which the parallel segment of the bond 
+        /// by which the parallel segment of the bond
         /// has to be shortend from the "second" side.
         std::optional<float> second_shortening_proportion;
         /// For double bonds
@@ -164,7 +176,8 @@ class CanvasMolecule {
         float second_atom_x;
         float second_atom_y;
         unsigned int second_atom_idx;
-        bool highlighted;
+        /// Highlight bitmask
+        highlight_t highlight;
 
         /// Returns an [x,y] pair of numbers
         std::pair<float,float> get_perpendicular_versor() const noexcept;
@@ -175,6 +188,27 @@ class CanvasMolecule {
 
         float get_length() const noexcept;
     };
+
+    struct QEDInfo {
+        unsigned int number_of_hydrogen_bond_acceptors;
+        unsigned int number_of_hydrogen_bond_donors;
+        unsigned int number_of_rotatable_bonds;
+        unsigned int number_of_aromatic_rings;
+        unsigned int number_of_alerts;
+        double molecular_weight;
+        double alogp;         /// Hydrophobicity
+        double molecular_polar_surface_area;
+        double ads_mw;
+        double ads_alogp;
+        double ads_hba;
+        double ads_hbd;
+        double ads_psa;
+        double ads_rotb;
+        double ads_arom;
+        double ads_alert;
+        double qed_score;
+    };
+
     typedef std::variant<CanvasMolecule::Atom,CanvasMolecule::Bond> AtomOrBond;
     typedef std::optional<AtomOrBond> MaybeAtomOrBond;
     private:
@@ -187,7 +221,9 @@ class CanvasMolecule {
     static BondType bond_type_from_rdkit(RDKit::Bond::BondType);
     static AtomColor atom_color_from_rdkit(const RDKit::Atom *) noexcept;
     static std::tuple<float,float,float> atom_color_to_rgb(AtomColor) noexcept;
+    static std::tuple<float,float,float> hightlight_to_rgb(HighlightType) noexcept;
     static std::string atom_color_to_html(AtomColor) noexcept;
+    static std::optional<HighlightType> determine_dominant_highlight(highlight_t) noexcept;
 
     std::shared_ptr<RDKit::RWMol> rdkit_molecule;
     std::vector<Atom> atoms;
@@ -210,7 +246,7 @@ class CanvasMolecule {
 
     /// Coordinate map built in the previous call
     /// to `compute_molecule_geometry()`
-    /// stored for reference to maintain alignment 
+    /// stored for reference to maintain alignment
     /// when recomputing molecule geometry
     std::optional<RDGeom::INT_POINT2D_MAP> cached_atom_coordinate_map;
 
@@ -219,13 +255,16 @@ class CanvasMolecule {
     /// Used for various lookups: while drawing, in the lowering process itself, etc.
     std::map<unsigned int,std::vector<std::shared_ptr<Bond>>> bond_map;
 
+    /// QED info is updated while lowering from RDKit.
+    std::optional<QEDInfo> qed_info;
+
 
     /// Computes the scale used for drawing
     /// And interfacing with screen coordinates
     float get_scale() const noexcept;
 
     /// Uses RDDepict to get molecule depiction & geometry info
-    /// 
+    ///
     /// Part of the lowering process.
     RDGeom::INT_POINT2D_MAP compute_molecule_geometry() const;
 
@@ -240,16 +279,22 @@ class CanvasMolecule {
     /// Part of the lowering process.
     void process_alignment_in_rings();
 
-    /// Computes length proportions by which 
+    /// Computes length proportions by which
     /// the parallel segments of double bonds have to be shortened
     /// to main aesthetic proportions.
     ///
     /// Part of the lowering process.
     void shorten_double_bonds();
 
+    void update_qed_info();
+    
+    /// Manages error highlights
+    /// Part of the lowering process.
+    void process_problematic_areas(bool allow_invalid_molecules);
+
     public:
 
-    CanvasMolecule(std::shared_ptr<RDKit::RWMol> rdkit_mol);
+    CanvasMolecule(std::shared_ptr<RDKit::RWMol> rdkit_mol, bool allow_invalid_mol);
 
     /// Replaces the inner shared_ptr to the molecule
     /// from which the CanvasMolecule is lowered.
@@ -259,12 +304,13 @@ class CanvasMolecule {
 
     /// Clears the drawing-friendly 2D representation data
     /// and re-creates it from the internal RDKit::RWMol
-    /// 
+    ///
     /// If `sanitize_after` is true, the molecule will get sanitized
-    /// after lowering
-    void lower_from_rdkit(bool sanitize_after);
+    /// after lowering.
+    /// QED gets recomputed and updated if `with_qed` is true
+    void lower_from_rdkit(bool sanitize_after, bool with_qed = true);
 
-    /// Clears `cached_atom_coordinate_map`, 
+    /// Clears `cached_atom_coordinate_map`,
     /// forcing the subsequent call to `compute_molecule_geometry()`
     /// to determine the shape of the molecule from scratch.
     ///
@@ -274,7 +320,7 @@ class CanvasMolecule {
     /// Updates the `cached_atom_coordinate_map` after an atom has been removed
     /// in such a way as to prevent the cached molecule geometry from being broken
     void update_cached_atom_coordinate_map_after_atom_removal(unsigned int removed_atom_idx);
-    
+
     /// Sets the scale for drawing
     void set_canvas_scale(float scale);
 
@@ -282,6 +328,7 @@ class CanvasMolecule {
     std::pair<float,float> get_on_screen_coords(float x, float y) const noexcept;
     std::optional<std::pair<float,float>> get_on_screen_coords_of_atom(unsigned int atom_idx) const noexcept;
     graphene_rect_t get_on_screen_bounding_rect() const noexcept;
+    std::optional<QEDInfo> get_qed_info() const noexcept;
     void perform_flip(FlipMode flip_mode);
     void rotate_by_angle(double radians);
 
@@ -292,9 +339,11 @@ class CanvasMolecule {
     /// Returns the thing that was clicked on (or nullopt if there's no match).
     MaybeAtomOrBond resolve_click(int x, int y) const noexcept;
 
-    void highlight_atom(int atom_idx);
-    void highlight_bond(int atom_a, int atom_b); 
-    void clear_highlights();
+    void add_atom_highlight(int atom_idx, HighlightType htype);
+    void add_bond_highlight(unsigned int atom_a, unsigned int atom_b, HighlightType htype);
+    void add_highlight_to_all_bonds(HighlightType htype);
+    /// Clears the highlight flag of the given type (for both atoms and bonds)
+    void clear_highlights(HighlightType htype = HighlightType::Hover);
 
     static RDKit::Bond::BondType bond_type_to_rdkit(BondType) noexcept;
     static BondGeometry bond_geometry_from_rdkit(RDKit::Bond::BondDir) noexcept;

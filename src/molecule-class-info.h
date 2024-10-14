@@ -145,7 +145,8 @@ enum {CONTOUR_UP, CONTOUR_DOWN};
 
 #include "pick.hh"
 
-#include "dots-representation.hh"
+// #include "dots-representation.hh"
+#include "pli/dots-representation-info.hh"
 #include "named-rotamer-score.hh"
 
 #include "c-interface-sequence.hh"
@@ -574,7 +575,7 @@ class molecule_class_info_t {
    int copy_chain(mmdb::Chain *from_chain, mmdb::Chain *to_chain,
 		  clipper::RTop_orth a_to_b_transform);
 
-   std::vector<coot::dots_representation_info_t> dots;
+   std::vector<pli::dots_representation_info_t> dots;
    coot::colour_t dots_colour;
    bool dots_colour_set;
 
@@ -1198,6 +1199,9 @@ public:        //                      public
    // const coot::CartesianPair* diff_map_draw_vectors;
    // int n_diff_map_draw_vectors;
    std::vector<coot::density_contour_triangles_container_t> draw_diff_map_vector_sets;
+
+   void set_use_vertex_gradients_for_map_normals(bool state);
+   bool use_vertex_gradients_for_map_normals_flag;
 
    coot::Cartesian  centre_of_molecule() const;
    float size_of_molecule() const; // return the standard deviation of
@@ -2691,7 +2695,7 @@ public:        //                      public
                             			      // the atom names to see if they get
 				                      // more likely rotamers
    // the residue type and the spec
-   std::vector<std::pair<std::string, coot::residue_spec_t> > list_nomenclature_errors(coot::protein_geometry *geom_p);
+   std::vector<std::pair<std::string, coot::residue_spec_t> > list_nomenclature_errors(const coot::protein_geometry *geom_p);
 
    // ---- cis <-> trans conversion
    int cis_trans_conversion(const std::string &chain_id, int resno, const std::string &inscode,
@@ -3030,7 +3034,7 @@ public:        //                      public
 
    // --------- pisa surface make dots --------------------
    // here we add the dots to the dots vector of this molecule
-   void add_dots(const coot::dots_representation_info_t &dots_in) {
+   void add_dots(const pli::dots_representation_info_t &dots_in) {
       dots.push_back(dots_in);
    }
 
@@ -3327,7 +3331,7 @@ void draw_map_molecule(bool draw_transparent_maps,
    // --------- Pretty (hopefully) animated ligand interactions -----------
 
    std::vector<coot::animated_ligand_interactions_t> animated_ligand_interactions_vec;
-   void add_animated_ligand_interaction(const  coot::fle_ligand_bond_t &lb);
+   void add_animated_ligand_interaction(const  pli::fle_ligand_bond_t &lb);
 
    void draw_animated_ligand_interactions(const gl_context_info_t &gl,
 					  const long &start_time) const;
@@ -3535,6 +3539,9 @@ void draw_map_molecule(bool draw_transparent_maps,
    short int is_em_map_cached_flag; // -1 mean unset (so set it, 0 means no, 1 means yes)
    short int is_em_map_cached_state(); // set is_em_map_cached_flag if not set
 
+   // user-setting over-ride internal rules for P1&909090 means EM
+   void set_map_has_symmetry(bool is_em_map);
+
    void residue_partial_alt_locs_split_residue(coot::residue_spec_t spec,
 					       int i_bond,
 					       double theta,  // degrees
@@ -3559,13 +3566,22 @@ void draw_map_molecule(bool draw_transparent_maps,
    std::vector<std::shared_ptr<MolecularRepresentationInstance> > molrepinsts;
 #endif // USE_MOLECULES_TO_TRIANGLES
 
+   std::vector<std::pair<std::string, float> > M2T_float_params;
+   std::vector<std::pair<std::string, int> >   M2T_int_params;
+   //! Update float parameter for MoleculesToTriangles molecular mesh
+   void M2T_updateFloatParameter(const std::string &param_name, float value);
+
+   //! Update int parameter for MoleculesToTriangles molecular mesh
+   void M2T_updateIntParameter(const std::string &param_name, int value);
+
    // return the index in the molrepinsts vector (can be negative for failure)
    int make_molecularrepresentationinstance(const std::string &atom_selection,
 					    const std::string &colour_scheme,
 					    const std::string &style);
    int add_molecular_representation(const std::string &atom_selection,
 				    const std::string &colour_scheme,
-				    const std::string &style);
+				    const std::string &style,
+                                    int secondary_structure_usage_flag);
 
    // for AlphaFold pLDDT colouring
    void add_ribbon_representation_with_user_defined_residue_colours(const std::vector<coot::colour_holder> &user_defined_colours,

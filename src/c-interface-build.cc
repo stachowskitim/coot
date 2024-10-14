@@ -74,8 +74,6 @@
 #include "ligand/helix-placement.hh"
 #include "ligand/fast-ss-search.hh"
 
-#include "trackball.h" // adding exportable rotate interface
-
 #include "utils/coot-utils.hh"  // for is_member_p
 #include "coot-utils/coot-map-heavy.hh"  // for fffear
 
@@ -6002,6 +6000,16 @@ void set_refine_hydrogen_bonds(int state) {
    set_auto_h_bond_restraints(state);
 }
 
+void set_refine_use_noughties_physics(short int state) {
+   graphics_info_t::noughties_physics = state;
+}
+
+int get_refine_use_noughties_physics_state() {
+   return graphics_info_t::noughties_physics;
+}
+
+
+
 
 void get_mol_edit_lock(std::atomic<bool> &mol_edit_lock) {
    // std::cout << "debug:: test_function_scm() trying to get the lock with mol_edit_lock " << mol_edit_lock << std::endl;
@@ -6063,8 +6071,9 @@ void res_tracer(int imol_map, const std::string &pir_file_name) {
                                                    shelx_flag, false, false);
    update_go_to_atom_window_on_new_mol();
 
-   const clipper::Xmap<float> xmap = g.molecules[imol_map].xmap;
+   const clipper::Xmap<float> &xmap = g.molecules[imol_map].xmap;
    // coot::util::map_fill_from_mtz(&xmap, hklin_file_name, f_col_label, phi_col_label, "", use_weights, is_diff_map);
+   float xmap_rmsd = g.molecules[imol_map].map_sigma();
 
    if (true) { // 20221216-PE what's going wrong with xmap?
       clipper::Cell c = xmap.cell();
@@ -6081,7 +6090,7 @@ void res_tracer(int imol_map, const std::string &pir_file_name) {
    std::cout << "post-constructor with mol_edit_lock: " << watch_data_p->mol_edit_lock << std::endl;
 
    // pass geom to this too.
-   std::thread t(res_tracer_proc, xmap, fam, variation, n_top_spin_pairs, n_top_fragments, rmsd_cuffoff, flood_atom_mask_radius,
+   std::thread t(res_tracer_proc, xmap, xmap_rmsd, fam, variation, n_top_spin_pairs, n_top_fragments, rmsd_cuffoff, flood_atom_mask_radius,
                  weight, n_phi_psi_trials, with_ncs, watch_data_p);
 
    auto watching_timeout_func = [] (gpointer data) {
@@ -6191,9 +6200,10 @@ void to_generic_object_add_mesh(int object_number, PyObject *mesh_py) {
                   int t0 = PyLong_AsLong(PyList_GetItem(tri, 0));
                   int t1 = PyLong_AsLong(PyList_GetItem(tri, 1));
                   int t2 = PyLong_AsLong(PyList_GetItem(tri, 2));
-                  if (t0 < vertices.size()) {
-                     if (t1 < vertices.size()) {
-                        if (t2 < vertices.size()) {
+                  int vertices_size = vertices.size();
+                  if (t0 < vertices_size) {
+                     if (t1 < vertices_size) {
+                        if (t2 < vertices_size) {
                            g_triangle t(t0, t1, t2);
                            triangles.push_back(t);
                         }
@@ -6203,11 +6213,12 @@ void to_generic_object_add_mesh(int object_number, PyObject *mesh_py) {
             }
          }
 
-         std::cout << "Debug:: to_generoric_object_add_mesh() found "
+         std::cout << "Debug:: to_generic_object_add_mesh() found "
                    << vertices.size() << " vertices and " << triangles.size() << " triangles\n";
          if (! vertices.empty()) {
             if (! triangles.empty()) {
                Mesh m(vertices, triangles);
+               m.set_material_specularity(1,64);
                m.setup_buffers();
                meshed_generic_display_object o(m);
                graphics_info_t g;
@@ -6217,4 +6228,17 @@ void to_generic_object_add_mesh(int object_number, PyObject *mesh_py) {
          }
       }
    }
+}
+
+
+void generic_object_mesh_calculate_normals(int object_number) {
+
+   graphics_info_t g;
+   unsigned int object_number_u(object_number);
+   if (object_number >= 0) {
+      if (object_number_u < g.generic_display_objects.size()) {
+         g.generic_display_objects[object_number].mesh.calculate_normals();
+      }
+   }
+
 }

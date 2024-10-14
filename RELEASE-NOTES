@@ -1,4 +1,83 @@
 
+-----
+
+  Release 1.1.10
+
+  o FEATURE: Noughties-physics - add a refinement/atom manipulation mode
+             so that Coot behaves like it used to up to (and including)
+             version 0.8.x:
+             coot.set_refine_use_noughties_physics()
+
+  o FEATURE: Layla now displays QED Scores for molecules
+
+  o FEATURE: read_coordinates() added to the Coot API
+
+  o FEATURE: Cryo-EM servalcat use added to the Coot API
+
+  o CHANGE:  Network download files now follow the XDG Base Directory Protocol
+
+  o CHANGE:  HUD Ramachandran Plot is now pickable
+
+  o CHANGE:  Ligands with no dictionary are drawn with bonds in "Colour by Chain"
+             mode
+
+  o CHANGE:  Python requests is no longer a dependency
+
+  o BUG-FIX: Scroll wheel indicator in the Display Manager now correctly updates
+             on use of a key-binding to change the scrollable map
+
+  o BUG-FIX: Ugly least-squares fit dialog has been modernized.
+
+  o BUG-FIX: Fix the callback actions for the "Display Hydrogen Atoms" in
+             the Bonds control dialog.
+
+  o BUG-FIX: rework the calculation of pkg_data_dir() - particularly in the
+             case of relocatable binaries
+
+-----
+
+
+  Release 1.1.09
+
+  o FEATURE: Coot is now a (mostly) XDG Base Directory-compliant application
+             [guano-be-gone]
+
+  o FEATURE: tomo_section_view() function added to the api
+
+  o FEATURE: to_generic_object_add_points() added to the api (so that many point
+             can now be added quickly)
+
+  o FEATURE: generic_object_mesh_calculate_normals() function added to the API.
+             This averages winding-based normals for shared vertices.
+
+  o CHANGE:  In "configure" relocatable bianries are no longer enabled by default.
+             Use --enable-relocatable-binaries to turn them on if needed.
+
+  o CHANGE:  rework logic of the glyco chiral test for BETA1-6 and ALPHA1-6 links
+             [Markus Meier]
+
+  o CHANGE:  "Replace Residue" now works as an overlay
+
+  o CHANGE:  Allow bonding of HET-groups in polymer bonds
+
+  o CHANGE:  mmrrcc renamed to coot-mmrrcc
+
+  o CHANGE:  The ligand/solvent molecule is now closed after being added with
+             jiggle-fit
+
+  o CHANGE:  Add a key-binding for "Residue Info" (Ctrl-I)
+
+  o CHANGE:  Executable name changed from "coot-bin" to MacCoot on macOS
+
+  o BUG-FIX: Fix Change Chain ID GUI (thanks Simon Vecchioni)
+
+  o BUG-FIX: "Add Terminal Residue" now works for RNA and DNA
+
+  o BUG-FIX: Fix all-atom refinement mode
+
+----
+
+
   Release 1.1.08
 
   o FEATURE: Scene Presets added to the Draw menu
@@ -220,6 +299,18 @@ Future:
 [6] moorhen.org
 
 ----
+  Release 0.9.8.94
+
+  o CHANGE: Add a more informative message on failure to generate rtop in
+      transform-map-using-lsq-matrix [Martin Maly]
+
+  o CHANGE: The pyranose link restraints logic has changed - hopefully more
+      accurate now [Andrey Lebedev]
+
+  o BUG-FIX: the logic of the glyco-tree glyco chiral test for ALPHA1-6 and
+     BETA1-6 has been reversed (i.e. corrected) [Markus Meier]
+
+---
 
   Release 0.9.8.93
 

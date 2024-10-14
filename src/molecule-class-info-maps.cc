@@ -96,6 +96,14 @@ molecule_class_info_t::gtk3_draw() {
 }
 
 void
+molecule_class_info_t::set_use_vertex_gradients_for_map_normals(bool state) {
+
+   use_vertex_gradients_for_map_normals_flag = state;
+   update_map_internal();
+}
+
+
+void
 molecule_class_info_t::draw_map_molecule( bool draw_transparent_maps,
                                           Shader &shader, // unusual reference.. .change to pointer for consistency?
                                           const glm::mat4 &mvp,
@@ -505,6 +513,8 @@ molecule_class_info_t::update_map(bool do_it) {
 void
 molecule_class_info_t::update_map_internal() {
 
+   // std::cout << "debug:: update_map_internal() --- start --- with contour_level " << contour_level << std::endl;
+
    // duck out of doing map OpenGL map things if we are not in gui mode
    //
    // if (! graphics_info_t::use_graphics_interface_flag) return;
@@ -675,7 +685,7 @@ molecule_class_info_t::fill_fobs_sigfobs() {
 void
 molecule_class_info_t::update_map_triangles(float radius, coot::Cartesian centre) {
 
-   // std::cout   << "DEBUG:: update_map_triangles() at center: " << centre << std::endl;
+   // std::cout   << "DEBUG:: update_map_triangles() at center: " << centre << " contour level " << contour_level << std::endl;
    // std::cout   << "DEBUG:: update_map_triangles() g.zoom: " << g.zoom << std::endl;
 
    // duck out of doing map OpenGL map things if we are not in gui mode
@@ -746,9 +756,11 @@ molecule_class_info_t::update_map_triangles(float radius, coot::Cartesian centre
       if (n_reams < 1) n_reams = 1;
 
       for (int ii=0; ii<n_reams; ii++) {
+         // std::cout << "thread map mol-no: " << imol_no << " is_em_map: " << is_em_map << " contour_level: " << contour_level << std::endl;
          threads.push_back(std::thread(gensurf_and_add_vecs_threaded_workpackage,
                                        &xmap, contour_level, dy_radius, centre,
                                        isample_step, ii, n_reams, is_em_map,
+                                       use_vertex_gradients_for_map_normals_flag,
                                        &draw_vector_sets));
       }
       for (int ii=0; ii<n_reams; ii++)
@@ -761,6 +773,7 @@ molecule_class_info_t::update_map_triangles(float radius, coot::Cartesian centre
             threads.push_back(std::thread(gensurf_and_add_vecs_threaded_workpackage,
                                           &xmap, -contour_level, dy_radius, centre,
                                           isample_step, ii, n_reams, is_em_map,
+                                          use_vertex_gradients_for_map_normals_flag,
                                           &draw_diff_map_vector_sets));
          }
          for (int ii=0; ii<n_reams; ii++)
@@ -858,6 +871,7 @@ void gensurf_and_add_vecs_threaded_workpackage(const clipper::Xmap<float> *xmap_
 					       int isample_step,
 					       int iream_start, int n_reams,
 					       bool is_em_map,
+                                               bool use_vertex_gradients_for_map_normals_flag,
 					       std::vector<coot::density_contour_triangles_container_t> *draw_vector_sets_p) {
 
    try {
@@ -866,7 +880,8 @@ void gensurf_and_add_vecs_threaded_workpackage(const clipper::Xmap<float> *xmap_
       coot::density_contour_triangles_container_t tri_con =
         my_isosurface.GenerateTriangles_from_Xmap(std::cref(*xmap_p),
                                                   contour_level, dy_radius, centre, isample_step,
-                                                  iream_start, n_reams, is_em_map);
+                                                  iream_start, n_reams, is_em_map,
+                                                  use_vertex_gradients_for_map_normals_flag);
 
       // we are about to put the triangles into draw_vectors, so get the lock to
       // do that, so that the threads don't try to change draw_vectors at the same time.
@@ -1973,22 +1988,23 @@ molecule_class_info_t::set_initial_contour_level() {
 
    float level = 1.0;
    if (xmap_is_diff_map) {
-      if (map_sigma_ > 0.05) {
-	      level = nearest_step(map_mean_ +
-			      graphics_info_t::default_sigma_level_for_fofc_map*map_sigma_, 0.01);
+      // if (map_sigma_ > 0.05) { // what what I trying to do here?
+      if (true) {
+         level = nearest_step(map_mean_ + graphics_info_t::default_sigma_level_for_fofc_map*map_sigma_, 0.01);
       } else {
-	      level = 3.0*map_sigma_;
+	 level = 3.0*map_sigma_;
       }
    } else {
-      if (map_sigma_ > 0.05) {
+      // if (map_sigma_ > 0.05) {
+      if (true) {
 	      level = nearest_step(map_mean_ + graphics_info_t::default_sigma_level_for_map*map_sigma_, 0.01);
       } else {
 	      level = graphics_info_t::default_sigma_level_for_map * map_sigma_;
       }
    }
 
-   if (0)
-      std::cout << "..... in set_initial_contour_level() xmap_is_diff_map is " << xmap_is_diff_map
+   if (false)
+      std::cout << "DEBUG:: ..... in set_initial_contour_level() xmap_is_diff_map is " << xmap_is_diff_map
 		<< " and map_sigma_ is " << map_sigma_ << " and default sigma leve is "
 		<< graphics_info_t::default_sigma_level_for_fofc_map << " and map_mean is "
 		<< map_mean_ << std::endl;
@@ -2393,6 +2409,8 @@ molecule_class_info_t::read_ccp4_map(std::string filename, int is_diff_map_flag,
       if (em)
          contour_level = 4.5*sqrt(var);
 
+      set_initial_contour_level();
+
       std::cout << "INFO:: ------  em " << em << " contour_level " << contour_level << std::endl;
 
       std::cout << "      Map extents: ..... "
@@ -2405,7 +2423,9 @@ molecule_class_info_t::read_ccp4_map(std::string filename, int is_diff_map_flag,
       std::cout << "      Map minimum: ..... " << map_min_ << std::endl;
 
       // save state strings
-      save_state_command_strings_.push_back("handle-read-ccp4-map");
+      // c.f. std::string sc = state_command("coot", "set-draw-hydrogens", command_args, il);
+      save_state_command_strings_.push_back("coot");
+      save_state_command_strings_.push_back("handle-read-ccp4-map"); // maybe problems in scheme state script in future
       save_state_command_strings_.push_back(single_quote(coot::util::intelligent_debackslash(filename)));
       save_state_command_strings_.push_back(graphics_info_t::int_to_string(is_diff_map_flag));
 
@@ -2449,7 +2469,7 @@ molecule_class_info_t::set_is_em_map(const clipper_map_file_wrapper &file) {
    } else {
       is_em_map_cached_flag = 0;
    }
-   return false; // not a useful return values, because flag can have 3 values
+   return false; // not a useful return value, because flag can have 3 values
 }
 
 bool
@@ -2478,6 +2498,16 @@ molecule_class_info_t::is_em_map_cached_state() {
    return is_em_map_cached_flag;
 }
 
+// user-setting over-ride internal rules for P1&909090 means EM
+void 
+molecule_class_info_t::set_map_has_symmetry(bool is_em_map) {
+
+   is_em_map_cached_flag = is_em_map;
+   update_map_internal();
+
+}
+
+
 
 void
 molecule_class_info_t::install_new_map(const clipper::Xmap<float> &map_in, std::string name_in, bool is_em_map_flag_in) {
@@ -2489,20 +2519,26 @@ molecule_class_info_t::install_new_map(const clipper::Xmap<float> &map_in, std::
    // sets name_ to name_in:
    initialize_map_things_on_read_molecule(name_in, false, false, false); // not a diff_map
 
-   bool ipz = graphics_info_t::ignore_pseudo_zeros_for_map_stats;
-   bool write_output_flag = false;
-   mean_and_variance<float> mv = map_density_distribution(xmap, 40, write_output_flag, ipz);
+   // 20240702-PE now we can install empty maps (which get quickly overwritten by sensible maps)
+   // (adding servalcat interface)
+   //
+   if (! xmap.is_null()) {
 
-   float mean = mv.mean;
-   float var = mv.variance;
-   contour_level  = nearest_step(mean + 1.5*sqrt(var), 0.05);
-   update_map_in_display_control_widget();
+      bool ipz = graphics_info_t::ignore_pseudo_zeros_for_map_stats;
+      bool write_output_flag = false;
+      mean_and_variance<float> mv = map_density_distribution(xmap, 40, write_output_flag, ipz);
 
-   // fill class variables
-   map_mean_ = mv.mean;
-   map_sigma_ = sqrt(mv.variance);
+      float mean = mv.mean;
+      float var = mv.variance;
+      contour_level  = nearest_step(mean + 1.5*sqrt(var), 0.05);
+      update_map_in_display_control_widget();
 
-   update_map(true);
+      // fill class variables
+      map_mean_ = mv.mean;
+      map_sigma_ = sqrt(mv.variance);
+
+      update_map(true);
+   }
 }
 
 void
@@ -4278,7 +4314,7 @@ molecule_class_info_t::fit_to_map_by_random_jiggle(mmdb::PPAtom atom_selection,
                                                         mmr.second, chain_id,
                                                         mmr.first,
                                                         mmr.second, chain_id,
-                                                        COOT_LSQ_MAIN);
+                                                        coot::lsq_t::MAIN);
                      matches.push_back(match);
                      mmdb::Manager *mol_1 = mol;
                      mmdb::Manager *mol_2 = atom_sel.mol;

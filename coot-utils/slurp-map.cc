@@ -58,9 +58,9 @@ coot::util::slurp_fill_xmap_from_map_file(const std::string &file_name,
       n_rows = *reinterpret_cast<int *>(data+4);
       n_secs = *reinterpret_cast<int *>(data+8);
       if (debug) {
-         std::cout << "n_cols " << n_cols << std::endl;
-         std::cout << "n_rows " << n_rows << std::endl;
-         std::cout << "n_sections " << n_secs << std::endl;
+         std::cout << "debug:: n_cols " << n_cols << std::endl;
+         std::cout << "debug:: n_rows " << n_rows << std::endl;
+         std::cout << "debug:: n_sections " << n_secs << std::endl;
       }
    };
 
@@ -121,7 +121,7 @@ coot::util::slurp_fill_xmap_from_map_file(const std::string &file_name,
          if (fstat == 0) {
             FILE *fptr = fopen(file_name.c_str(), "rb");
             off_t st_size = s.st_size;
-            std::cout << "st_size: " << st_size << std::endl;
+            // std::cout << "st_size: " << st_size << std::endl;
             try {
                // 20231006-PE as it used to be.
                char *space = new char[st_size+1];
@@ -150,7 +150,8 @@ coot::util::slurp_fill_xmap_from_map_file(const std::string &file_name,
       std::cout << "WARNING:: file does not exist " << file_name << std::endl;
    }
 
-   std::cout << "DEBUG:: slurp_fill_xmap_from_map_file() returning " << status << std::endl;
+   if (false)
+      std::cout << "DEBUG:: slurp_fill_xmap_from_map_file() returning " << status << std::endl;
    return status;
 }
 
@@ -158,7 +159,8 @@ coot::util::slurp_fill_xmap_from_map_file(const std::string &file_name,
 
 // return value (status) means "is_basic_EM_map" (that's slurpable)
 bool
-coot::util::slurp_parse_xmap_data(char *data, clipper::Xmap<float> *xmap_p,
+coot::util::slurp_parse_xmap_data(char *data,
+                                  clipper::Xmap<float> *xmap_p,
                                   bool check_only) {
 
    bool debug = true;
@@ -172,9 +174,9 @@ coot::util::slurp_parse_xmap_data(char *data, clipper::Xmap<float> *xmap_p,
    n_rows = *reinterpret_cast<int *>(data+4);
    n_secs = *reinterpret_cast<int *>(data+8);
    if (debug) {
-      std::cout << "n_cols " << n_cols << std::endl;
-      std::cout << "n_rows " << n_rows << std::endl;
-      std::cout << "n_sections " << n_secs << std::endl;
+      std::cout << "debug:: n_cols " << n_cols << std::endl;
+      std::cout << "debug:: n_rows " << n_rows << std::endl;
+      std::cout << "debug:: n_sections " << n_secs << std::endl;
    }
 
    int mode = -1;
@@ -184,7 +186,7 @@ coot::util::slurp_parse_xmap_data(char *data, clipper::Xmap<float> *xmap_p,
    if (mode == 1) data_size = 2;
    if (mode == 6) data_size = 2; // two-byte integer. Needs fixing in the casting.
    if (debug)
-      std::cout << "slurp_map() mode: " << mode << std::endl;
+      std::cout << "debug:: slurp_map() mode: " << mode << std::endl;
 
    int nx_start = -1, ny_start = -1, nz_start = -1;
    int mx = -1, my = -1, mz = -1;
@@ -223,7 +225,7 @@ coot::util::slurp_parse_xmap_data(char *data, clipper::Xmap<float> *xmap_p,
    axis_order_xyz[map_sec-1] = 2;
 
    if (debug)
-      std::cout << "axis order " << map_row << " " << map_col << " " << map_sec << std::endl;
+      std::cout << "debug:: axis order " << map_row << " " << map_col << " " << map_sec << std::endl;
 
    // At the moment this function only works with simple X Y Z map ordering.
    // So escape with fail status if that is not the case
@@ -334,6 +336,53 @@ coot::util::slurp_parse_xmap_data(char *data, clipper::Xmap<float> *xmap_p,
 
    // 20240421-PE this crashes with tomogram emd_43330
 
+   auto fill_map_sections_by_grid = [data_size] (std::pair<unsigned int, unsigned int> start_stop_section_index,
+                                clipper::Xmap<float> *xmap,
+                                int n_secs, int n_rows, int n_cols,
+                                int nx_start, int ny_start, int nz_start,
+                                int *axis_order_xyz,
+                                const char *map_data,
+                                std::atomic<bool> &print_lock) {
+
+      // 20240421-PE Note to self: how about trying to get something like this to work? (c.f. mini-texture.cc)
+
+      unsigned int section_start = start_stop_section_index.first;
+      unsigned int section_stop  = start_stop_section_index.second;
+      clipper::Grid_sampling gs = xmap->grid_sampling();
+      clipper::Coord_grid cg_0(0,0, section_start);
+      clipper::Coord_grid cg_1(gs.nu()-1, gs.nv()-1, section_stop-1);
+      clipper::Grid_map grid(cg_0, cg_1);
+      clipper::Xmap_base::Map_reference_coord ix(*xmap, grid.min()), iu, iv, iw;
+      unsigned int offset = section_start * n_rows * n_cols;
+      unsigned int c_u = 0;
+      for ( iu = ix; iu.coord().u() <= grid.max().u(); iu.next_u() ) {
+         unsigned int c_v = 0;
+         for ( iv = iu; iv.coord().v() <= grid.max().v(); iv.next_v() ) {
+            unsigned int c_w = 0;
+            for ( iw = iv; iw.coord().w() <= grid.max().w(); iw.next_w() ) {
+               unsigned int grid_offset = c_u * gs.nu() * gs.nv() + c_v * gs.nv() + c_w;
+               const float f = *reinterpret_cast<const float *>(map_data + 4 * offset + 4 * grid_offset);
+
+               if (true) { // debugging
+                  bool unlocked = false;
+                  while (! print_lock.compare_exchange_weak(unlocked, true)) {
+                     std::this_thread::sleep_for(std::chrono::microseconds(1));
+                     unlocked = false;
+                  }
+                  std::cout << " " << iw.coord().format() << " " << f << std::endl;
+                  print_lock = false;
+               }
+
+               (*xmap)[iw] = f;
+               c_w++;
+            }
+            c_v++;
+         }
+         c_u++;
+      }
+   };
+
+
    auto fill_map_sections = [data_size] (std::pair<unsigned int, unsigned int> start_stop_section_index,
                                 clipper::Xmap<float> *xmap,
                                 int n_secs, int n_rows, int n_cols,
@@ -342,14 +391,6 @@ coot::util::slurp_parse_xmap_data(char *data, clipper::Xmap<float> *xmap_p,
                                 const char *map_data,
                                 std::atomic<bool> &print_lock) {
 
-
-      // 20240421-PE Note to self: how about trying to get something like this to work? (c.f. mini-texture.cc)
-      //    clipper::Coord_grid cg_0(0,0, section_start);
-      //    clipper::Coord_grid cg_1(gs.nu()-1, gs.nv()-1, section_stop-1);
-      //    for ( iu = ix; iu.coord().u() <= grid.max().u(); iu.next_u() ) {
-      //       for ( iv = iu; iv.coord().v() <= grid.max().v(); iv.next_v() ) {
-      //          for ( iw = iv; iw.coord().w() <= grid.max().w(); iw.next_w() ) {
-      //             xmap[iw] = f;
 
                                int offset = start_stop_section_index.first * n_rows * n_cols;
                                int crs[3];  // col,row,sec coordinate
@@ -442,7 +483,8 @@ coot::util::slurp_parse_xmap_data(char *data, clipper::Xmap<float> *xmap_p,
          for (auto air : airs) {
             if (debug)
                std::cout << "DEBUG:: thread fill sections " << air.first << " to " << air.second << std::endl;
-            threads.push_back(std::thread(fill_map_sections, air, &xmap, n_secs, n_rows, n_cols, nx_start, ny_start, nz_start,
+            threads.push_back(std::thread(fill_map_sections, air, &xmap, n_secs, n_rows, n_cols,
+                                          nx_start, ny_start, nz_start,
                                           axis_order_xyz, map_data, std::ref(print_lock)));
          }
          for (std::size_t i=0; i<airs.size(); i++)
@@ -500,7 +542,7 @@ int main(int argc, char **argv) {
             fclose(fptr);
             auto tp_4 = std::chrono::high_resolution_clock::now();
             // now act on st_size bytes of space
-            std::cout << "st_size " << st_size << " st_size_2 " << st_size_2 << std::endl;
+            // std::cout << "st_size " << st_size << " st_size_2 " << st_size_2 << std::endl;
             if (st_size_2 == 1) {
                // Happy Path
                if (st_size > 1024) {

@@ -43,17 +43,26 @@ EMSCRIPTEN_BINDINGS(lhasa) {
   // TODO: RDKit typedefinitions
   // function("remove_non_polar_hydrogens", &coot::layla::remove_non_polar_hydrogens);
   function("append_from_smiles", &lhasa::append_from_smiles);
+  function("append_from_pickle_base64", &lhasa::append_from_pickle_base64);
   // TODO: RDKit typedefinitions
   // function("rdkit_mol_from_smiles", &lhasa::rdkit_mol_from_smiles);
   // TODO: RDKit typedefinitions
   // function("rdkit_mol_to_smiles", &lhasa::rdkit_mol_to_smiles);
+  // TODO: RDKit typedefinitions
+  // function("rdkit_mol_from_pickle", &lhasa::rdkit_mol_from_pickle);
+  // TODO: RDKit typedefinitions
+  // function("rdkit_mol_to_pickle", &lhasa::rdkit_mol_to_pickle);
   enum_<DisplayMode>("DisplayMode")
     .value("Standard", DisplayMode::Standard)
     .value("AtomIndices", DisplayMode::AtomIndices)
     .value("AtomNames", DisplayMode::AtomNames);
   register_vector<impl::Renderer::DrawingCommand>("DrawingCommandVector");
+  register_vector<impl::Renderer::PathElement>("PathElementVector");
+  class_<impl::Renderer::TextMeasurementCache>("TextMeasurementCache")
+    .constructor<>();
   class_<impl::Renderer>("Renderer")
     .constructor<emscripten::val>()
+    .constructor<emscripten::val, impl::Renderer::TextMeasurementCache&>()
     .function("get_commands", &impl::Renderer::get_commands);
   value_object<impl::Renderer::Color>("Color")
     .field("r", &impl::Renderer::Color::r)
@@ -68,22 +77,23 @@ EMSCRIPTEN_BINDINGS(lhasa) {
     .field("y", &graphene_point_t::y);
   value_object<impl::Renderer::Line>("Line")
     .field("start", &impl::Renderer::Line::start)
-    .field("end", &impl::Renderer::Line::end)
-    .field("style", &impl::Renderer::Line::style);
+    .field("end", &impl::Renderer::Line::end);
   value_object<impl::Renderer::Arc>("Arc")
     .field("origin", &impl::Renderer::Arc::origin)
     .field("radius", &impl::Renderer::Arc::radius)
     .field("angle_one", &impl::Renderer::Arc::angle_one)
-    .field("angle_two", &impl::Renderer::Arc::angle_two)
-    .field("has_fill", &impl::Renderer::Arc::has_fill)
-    .field("fill_color", &impl::Renderer::Arc::fill_color)
-    .field("has_stroke", &impl::Renderer::Arc::has_stroke)
-    .field("stroke_style", &impl::Renderer::Arc::stroke_style);
+    .field("angle_two", &impl::Renderer::Arc::angle_two);
+  class_<impl::Renderer::PathElement>("PathElement")
+    .function("is_arc", &impl::Renderer::PathElement::is_arc)
+    .function("as_arc", &impl::Renderer::PathElement::as_arc)
+    .function("as_line", &impl::Renderer::PathElement::as_line)
+    .function("is_line", &impl::Renderer::PathElement::is_line);
   class_<impl::Renderer::Path>("Path")
     .property("fill_color", &impl::Renderer::Path::fill_color)
     .property("has_fill", &impl::Renderer::Path::has_fill)
     .property("stroke_style", &impl::Renderer::Path::stroke_style)
-    .property("commands", &impl::Renderer::Path::commands);
+    .property("has_stroke", &impl::Renderer::Path::has_stroke)
+    .function("get_elements", &impl::Renderer::Path::get_elements);
   enum_<impl::Renderer::TextPositioning>("TextPositioning")
     .value("Normal", impl::Renderer::TextPositioning::Normal)
     .value("Sub", impl::Renderer::TextPositioning::Sub)
@@ -114,12 +124,8 @@ EMSCRIPTEN_BINDINGS(lhasa) {
     .constructor();
   class_<impl::Renderer::DrawingCommand>("DrawingCommand")
     .function("is_path", &impl::Renderer::DrawingCommand::is_path)
-    .function("is_arc", &impl::Renderer::DrawingCommand::is_arc)
-    .function("is_line", &impl::Renderer::DrawingCommand::is_line)
-    .function("is_text", &impl::Renderer::DrawingCommand::is_text)
     .function("as_path", &impl::Renderer::DrawingCommand::as_path)
-    .function("as_arc", &impl::Renderer::DrawingCommand::as_arc)
-    .function("as_line", &impl::Renderer::DrawingCommand::as_line)
+    .function("is_text", &impl::Renderer::DrawingCommand::is_text)
     .function("as_text", &impl::Renderer::DrawingCommand::as_text);
   class_<DeleteTool>("DeleteTool")
     .constructor<>();
@@ -131,7 +137,8 @@ EMSCRIPTEN_BINDINGS(lhasa) {
     .constructor<>();
   class_<RemoveHydrogensTool>("RemoveHydrogensTool")
     .constructor<>();
-  enum_<ElementInsertion::Element>("Element")
+  // I had to rename it to "LhasaElement" due to name clash in Moorhen
+  enum_<ElementInsertion::Element>("LhasaElement")
     .value("C", ElementInsertion::Element::C)
     .value("N", ElementInsertion::Element::N)
     .value("O", ElementInsertion::Element::O)
@@ -150,7 +157,8 @@ EMSCRIPTEN_BINDINGS(lhasa) {
     .constructor<ElementInsertion::Element>();
   // Workaround for constructor overload not being available:
   function("element_insertion_from_symbol", &lhasa::element_insertion_from_symbol);
-  enum_<StructureInsertion::Structure>("Structure")
+  // I had to rename it to "LhasaStructure" due to name clash in Moorhen
+  enum_<StructureInsertion::Structure>("LhasaStructure")
     .value("CycloPropaneRing", StructureInsertion::Structure::CycloPropaneRing)
     .value("CycloButaneRing", StructureInsertion::Structure::CycloButaneRing)
     .value("CycloPentaneRing", StructureInsertion::Structure::CycloPentaneRing)
@@ -195,23 +203,49 @@ EMSCRIPTEN_BINDINGS(lhasa) {
   enum_<CootLigandEditorCanvas::MeasurementDirection>("MeasurementDirection")
     .value("HORIZONTAL", CootLigandEditorCanvas::MeasurementDirection::HORIZONTAL)
     .value("VERTICAL", CootLigandEditorCanvas::MeasurementDirection::VERTICAL);
+  value_object<CanvasMolecule::QEDInfo>("QEDInfo")
+    .field("number_of_hydrogen_bond_acceptors", &CanvasMolecule::QEDInfo::number_of_hydrogen_bond_acceptors)
+    .field("number_of_hydrogen_bond_donors",&CanvasMolecule::QEDInfo:: number_of_hydrogen_bond_donors)
+    .field("number_of_rotatable_bonds", &CanvasMolecule::QEDInfo::number_of_rotatable_bonds)
+    .field("number_of_aromatic_rings", &CanvasMolecule::QEDInfo::number_of_aromatic_rings)
+    .field("number_of_alerts", &CanvasMolecule::QEDInfo::number_of_alerts)
+    .field("molecular_weight", &CanvasMolecule::QEDInfo::molecular_weight)
+    .field("alogp", &CanvasMolecule::QEDInfo::alogp)
+    .field("molecular_polar_surface_area", &CanvasMolecule::QEDInfo::molecular_polar_surface_area)
+    .field("ads_mw", &CanvasMolecule::QEDInfo::ads_mw)
+    .field("ads_alogp", &CanvasMolecule::QEDInfo::ads_alogp)
+    .field("ads_hba", &CanvasMolecule::QEDInfo::ads_hba)
+    .field("ads_hbd", &CanvasMolecule::QEDInfo::ads_hbd)
+    .field("ads_psa", &CanvasMolecule::QEDInfo::ads_psa)
+    .field("ads_rotb", &CanvasMolecule::QEDInfo::ads_rotb)
+    .field("ads_arom", &CanvasMolecule::QEDInfo::ads_arom)
+    .field("ads_alert", &CanvasMolecule::QEDInfo::ads_alert)
+    .field("qed_score", &CanvasMolecule::QEDInfo::qed_score);
   class_<impl::WidgetCoreData>("ImplWidgetCoreData");
+  register_map<unsigned int, std::string>("SmilesMap");
+  // Without this, Emscripten errors out
+  register_vector<unsigned int>("MoleculeIdVector");
   class_<CootLigandEditorCanvas, base<impl::WidgetCoreData>>("Canvas")
     .constructor<>()
     .function("set_active_tool", &CootLigandEditorCanvas::set_active_tool)
     // TODO: RDKit typedefinitions
     // .function("append_molecule", &CootLigandEditorCanvas::append_molecule)
+    .function("update_molecule_from_smiles", &CootLigandEditorCanvas::update_molecule_from_smiles)
     .function("set_scale", &CootLigandEditorCanvas::set_scale)
     .function("get_scale", &CootLigandEditorCanvas::get_scale)
     .function("undo_edition", &CootLigandEditorCanvas::undo)
     .function("redo_edition", &CootLigandEditorCanvas::redo)
     .function("get_molecule_count", &CootLigandEditorCanvas::get_molecule_count)
+    .function("get_idx_of_first_molecule", &CootLigandEditorCanvas::get_idx_of_first_molecule)
+    .function("get_max_molecule_idx", &CootLigandEditorCanvas::get_max_molecule_idx)
     .function("set_allow_invalid_molecules", &CootLigandEditorCanvas::set_allow_invalid_molecules)
     .function("get_allow_invalid_molecules", &CootLigandEditorCanvas::get_allow_invalid_molecules)
     .function("get_display_mode", &CootLigandEditorCanvas::get_display_mode)
     .function("set_display_mode", &CootLigandEditorCanvas::set_display_mode)
     .function("get_smiles", &CootLigandEditorCanvas::get_smiles)
     .function("get_smiles_for_molecule", &CootLigandEditorCanvas::get_smiles_for_molecule)
+    .function("get_pickled_molecule", &CootLigandEditorCanvas::get_pickled_molecule)
+    .function("get_pickled_molecule_base64", &CootLigandEditorCanvas::get_pickled_molecule_base64)
     .function("clear_molecules", &CootLigandEditorCanvas::clear_molecules)
     .function("on_hover", &CootLigandEditorCanvas::on_hover)
     .function("on_scroll", &CootLigandEditorCanvas::on_scroll)

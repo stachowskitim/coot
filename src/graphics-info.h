@@ -978,9 +978,11 @@ public:
    void init();
    void setup_key_bindings();
 
+   static bool graphics_is_gl_es; // can we make a fallback coot where this is true?
+
    static bool use_gemmi;
    void set_use_gemmi(bool state) { use_gemmi = state; }
-   logging log;
+   static logging log;
 
    static bool coot_is_a_python_module; //turned off in main()
    static bool prefer_python;
@@ -1945,6 +1947,7 @@ public:
 
    coot::Symm_Atom_Pick_Info_t symmetry_atom_pick() const;
    coot::Symm_Atom_Pick_Info_t symmetry_atom_pick(const coot::Cartesian &front, const coot::Cartesian &back) const;
+   coot::Symm_Atom_Pick_Info_t symmetry_atom_close_to_screen_centre() const;
 
    bool tomo_pick(double x, double y, gint n_press, bool shift_is_pressed);
 
@@ -2799,6 +2802,7 @@ public:
 			       const coot::residue_spec_t &res_1,
 			       const coot::residue_spec_t &res_2);
    void delete_active_residue();
+   void delete_active_residue_alt_conf_atoms();
    // c-info functions really, but we cant have mmdb_manager there, so the are moved here.
 
    static void output_residue_info_as_text(int atom_index, int imol);
@@ -3146,6 +3150,7 @@ public:
    bool check_if_hud_button_moused_over(double x, double y, bool button_1_is_down);
    bool check_if_hud_button_moused_over_or_act_on_hit(double x, double y, bool act_on_hit, bool button_1_is_down);
 
+   bool check_if_hud_rama_plot_clicked(double mouse_x, double mouse_y);
 
    void unset_moving_atoms_currently_dragged_atom_index() {
      moving_atoms_currently_dragged_atom_index = -1;
@@ -3505,7 +3510,8 @@ public:
 					    short int squared_flag);
    void move_moving_atoms_by_simple_translation(int screenx, int screeny); // for rot/trans
    void move_single_atom_of_moving_atoms(int screenx, int screeny);
-   void move_atom_pull_target_position(double screenx, double screeny);
+   // if control_is_pressed is true, then we only want to move the dragged atom
+   void move_atom_pull_target_position(double screenx, double screeny, bool control_is_pressed);
    void add_target_position_restraint_for_intermediate_atom(const coot::atom_spec_t &spec,
 							    const clipper::Coord_orth &target_pos);
    void add_target_position_restraints_for_intermediate_atoms(const std::vector<std::pair<coot::atom_spec_t, clipper::Coord_orth> > &atom_spec_position_vec); // refines after added
@@ -4078,7 +4084,8 @@ public:
    int add_molecular_representation(int imol,
                                     const std::string &atom_selection,
 				    const std::string &colour_scheme,
-				    const std::string &style);
+				    const std::string &style,
+                                    int secondary_structure_usage_flag);
    int add_ribbon_representation_with_user_defined_colours(int imol, const std::string &name);
    void remove_molecular_representation(int imol, int idx);
 
@@ -4136,7 +4143,7 @@ public:
       // std::cout << "generic_objects_dialog_grid_add_object_internal() --- start --- " << std::endl;
 
       if (! gdo.mesh.is_closed()) {
-         std::cout << "generic_objects_dialog_grid_add_object_internal() no-closed " << io << std::endl;
+         // std::cout << "generic_objects_dialog_grid_add_object_internal() no-closed " << io << std::endl;
          GtkWidget *checkbutton = gtk_check_button_new_with_mnemonic (("Display"));
          std::string label_str = gdo.mesh.name;
          GtkWidget *label = gtk_label_new(label_str.c_str());
@@ -4674,6 +4681,7 @@ string   static std::string sessionid;
    static double mouse_y;
    static double drag_begin_x; // gtk pixels
    static double drag_begin_y;
+   static double mouse_speed; // default 1.0, but adjusted to be bigger for wide display
    static std::pair<double, double> mouse_previous_position;
    static void set_mouse_previous_position(double x, double y) { mouse_previous_position.first = x; mouse_previous_position.second = y; }
    static double get_mouse_previous_position_x() { return mouse_previous_position.first; }
@@ -5304,30 +5312,40 @@ string   static std::string sessionid;
    void load_gltf_model(const std::string &gltf_file_name);
 
    static void attach_buffers(const char *s = __builtin_FUNCTION()) {
+
+      bool print_errors = false;
       if (use_graphics_interface_flag) {
-         GLenum err = glGetError();
-         if (err) {
-            std::cout << "GL ERROR:: attach_buffers --- start ---\n";
+         if (print_errors) {
+            GLenum err = glGetError();
+            if (err) {
+               std::cout << "GL ERROR:: attach_buffers --- start ---\n";
 #ifdef USE_BACKWARD
-            backward::StackTrace st;
-            backward::Printer p;
-            st.load_here(32);
-            p.print(st);
+               backward::StackTrace st;
+               backward::Printer p;
+               st.load_here(32);
+               p.print(st);
 #endif
-         }
-         auto gl_area = glareas[0];
-         gtk_gl_area_attach_buffers(GTK_GL_AREA(gl_area));
-         err = glGetError();
-         if (err) {
-            std::cout << "GL ERROR:: attach_buffers() --- post gtk_gl_area_attach_buffers() "
-                      << " with gl_area " << gl_area << " calling function: "
-                      << s << "()\n";
+            }
+            auto gl_area = glareas[0];
+            gtk_gl_area_attach_buffers(GTK_GL_AREA(gl_area));
+            err = glGetError();
+            if (err) {
+               std::cout << "GL ERROR:: attach_buffers() --- post gtk_gl_area_attach_buffers() "
+                         << " with gl_area " << gl_area << " calling function: "
+                         << s << "()\n";
 #ifdef USE_BACKWARD
-            backward::StackTrace st;
-            backward::Printer p;
-            st.load_here(32);
-            p.print(st);
+               backward::StackTrace st;
+               backward::Printer p;
+               st.load_here(32);
+               p.print(st);
 #endif
+            }
+         } else {
+
+            // cleaner output
+            auto gl_area = glareas[0];
+            gtk_gl_area_attach_buffers(GTK_GL_AREA(gl_area));
+
          }
       }
    }
@@ -5395,6 +5413,8 @@ string   static std::string sessionid;
 
    static void add_shortcuts_to_window(GtkWidget *shortcuts_window);
 
+   static bool noughties_physics; // false by default
+
    static float gaussian_surface_sigma;
    static float gaussian_surface_contour_level;
    static float gaussian_surface_box_radius;
@@ -5402,8 +5422,15 @@ string   static std::string sessionid;
    static float gaussian_surface_fft_b_factor;
    static short int gaussian_surface_chain_colour_mode;
 
+   static std::pair<bool, std::string> servalcat_fofc;
+   static std::pair<bool, std::string> servalcat_refine; // output "pdb" file name
+
    static bool curmudgeon_mode; // default false, particles and faces
    static bool use_sounds; // default true
+
+   static std::vector<std::pair<std::string, clipper::Xmap<float> > > map_partition_results;
+   static int map_partition_results_state;
+   static std::string map_partition_results_state_string; // "Done A Chain" etc.
 
    // add a pumpkin as a graphics object and draw it.
    void pumpkin();

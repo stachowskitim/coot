@@ -2625,8 +2625,10 @@ Mesh::update_instancing_buffer_data(const std::vector<glm::mat4> &mats,
       std::cout << "You forgot to setup this Mesh " << name << std::endl;
    glBindVertexArray(vao);
 
-   std::cout << "-------- update_instancing_buffer_data() mats " << mats.size() << std::endl;
-   std::cout << "-------- update_instancing_buffer_data() cols " << colours.size() << std::endl;
+   if (false) {
+      std::cout << "-------- update_instancing_buffer_data() mats " << mats.size() << std::endl;
+      std::cout << "-------- update_instancing_buffer_data() cols " << colours.size() << std::endl;
+   }
 
    if (n_mats > 0) {
       glBindBuffer(GL_ARRAY_BUFFER, inst_rts_buffer_id);
@@ -3793,6 +3795,43 @@ Mesh::invert_normals() { // flip normals
       vertex.normal = -vertex.normal;
 
 }
+
+void
+Mesh::calculate_normals() {
+
+   std::map<unsigned int, std::vector<glm::vec3> > normal_map;
+   for (unsigned int i=0; i<triangles.size(); i++) {
+      const auto &triangle = triangles[i];
+      const glm::vec3 &v0 = vertices[triangle.point_id[0]].pos;
+      const glm::vec3 &v1 = vertices[triangle.point_id[1]].pos;
+      const glm::vec3 &v2 = vertices[triangle.point_id[2]].pos;
+      glm::vec3 d1 = v1 - v0;
+      glm::vec3 d2 = v2 - v0;
+      glm::vec3 c = glm::cross(d1, d2);
+      glm::vec3 n = -glm::normalize(c);
+      bool b = glm::any(glm::isnan(n));
+      if (!b) {
+         normal_map[triangle.point_id[0]].push_back(n);
+         normal_map[triangle.point_id[1]].push_back(n);
+         normal_map[triangle.point_id[2]].push_back(n);
+      }
+   }
+   std::map<unsigned int, std::vector<glm::vec3> >::const_iterator it;
+   for (it=normal_map.begin(); it!=normal_map.end(); ++it) {
+      const unsigned int &idx = it->first;
+      const std::vector<glm::vec3> &vecs = it->second;
+      glm::vec3 sum(0,0,0);
+      for (unsigned int j=0; j<vecs.size(); j++)
+         sum += vecs[j];
+      float fact = 1.0f/static_cast<float>(vecs.size());
+      glm::vec3 av_norm = sum *= fact;
+      std::cout << glm::to_string(av_norm) << "\n";
+      vertices[idx].normal = av_norm;
+   }
+   setup_buffers();
+
+}
+
 
 void
 Mesh::remove_last_subobject(unsigned int n_vertices, unsigned int n_triangles) {

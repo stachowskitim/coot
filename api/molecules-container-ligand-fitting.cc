@@ -1,9 +1,11 @@
 
 #include <clipper/ccp4/ccp4_map_io.h> // debugging mapout
 
+#include "utils/base64-encode-decode.hh"
 #include "ligand/wligand.hh"
 
 #include "molecules-container.hh"
+
 
 // Give this ex-lambda function a home?
 std::string get_first_residue_name(mmdb::Manager *mol) {
@@ -42,12 +44,52 @@ molecules_container_t::get_rdkit_mol(const std::string &residue_name, int imol_e
       if (r_p.first) {
          const auto &restraints = r_p.second;
          m = coot::rdkit_mol(restraints);
+         std::string prop_string = "ligand-from-dictionary-" + residue_name + "-" + std::to_string(imol_enc);
+         m.setProp("moorhen-id", prop_string);
       }
    }
    catch (const std::runtime_error &rte) {
       std::cout << rte.what() << std::endl;
    }
    return m;
+}
+#endif
+
+
+#ifdef MAKE_ENHANCED_LIGAND_TOOLS
+
+// Prevents preprocessor substitution of `VERSION` in `MolPickler.h`
+#ifndef RD_MOLPICKLE_H
+
+#ifdef VERSION
+#define __COOT_VERSION_VALUE VERSION
+#undef VERSION
+#endif
+
+#include <GraphMol/MolPickler.h>
+
+#ifdef __COOT_VERSION_VALUE
+#define VERSION __COOT_VERSION_VALUE
+#undef __COOT_VERSION_VALUE
+#endif
+
+#endif //RD_MOLPICKLE_H
+
+
+std::string
+molecules_container_t::get_rdkit_mol_pickle_base64(const std::string &residue_name, int imol_enc) {
+
+   RDKIT_GRAPHMOL_EXPORT RDKit::MolPickler mp;
+   std::string pickle_string;
+   RDKit::RWMol mol = get_rdkit_mol(residue_name, imol_enc);
+   if (mol.getNumAtoms() > 0) {
+      mp.pickleMol(mol, pickle_string);
+      return moorhen_base64::base64_encode((const unsigned char*)pickle_string.c_str(), pickle_string.size());
+      // std::ofstream f("test-mol.pickle");
+      // f << pickle_string;
+      // f.close();
+   }
+   return pickle_string;
 }
 #endif
 
@@ -504,7 +546,8 @@ molecules_container_t::get_svg_for_residue_type(int imol, const std::string &com
                } else {
                   svg_molecule_t svg;
                   svg.import_rdkit_mol(&mol, iconf);
-                  s = svg.render_to_svg_string(dark_bg_flag);
+                  double sf = 400.0;
+                  s = svg.render_to_svg_string(sf, dark_bg_flag);
                   ligand_svg_store[key] = s;
                }
             } else {
@@ -535,7 +578,8 @@ molecules_container_t::get_svg_for_residue_type(int imol, const std::string &com
                   svg_molecule_t svg;
                   svg.import_rdkit_mol(&rdkit_mol, conformer_id);
                   dark_bg_flag = false;
-                  s = svg.render_to_svg_string(dark_bg_flag);
+                  double sf = 400.0;
+                  s = svg.render_to_svg_string(sf, dark_bg_flag);
                }
                ligand_svg_store[key] = s;
             }

@@ -82,10 +82,6 @@ graphics_info_t::on_glarea_drag_update_primary(GtkGestureDrag *gesture, double d
    // Ctrl left-mouse means pan
    GdkModifierType modifier = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(gesture));
    bool control_is_pressed = (modifier & GDK_CONTROL_MASK);
-   if (control_is_pressed) {
-      do_drag_pan_gtk3(gl_area, drag_delta_x, drag_delta_y); // 20220613-PE no redraw here currently
-      graphics_draw();
-   }
    double x = drag_begin_x + drag_delta_x;
    double y = drag_begin_y + drag_delta_y;
    double delta_delta_x = x - get_mouse_previous_position_x();
@@ -95,9 +91,14 @@ graphics_info_t::on_glarea_drag_update_primary(GtkGestureDrag *gesture, double d
    if (in_moving_atoms_drag_atom_mode_flag) {
       if (last_restraints_size() > 0) {
          // move an already picked atom
-         move_atom_pull_target_position(x, y);
+         move_atom_pull_target_position(x, y, control_is_pressed);
       }
    } else {
+      if (control_is_pressed) {
+         do_drag_pan_gtk3(gl_area, drag_delta_x, drag_delta_y); // 20220613-PE no redraw here currently
+         graphics_draw();
+      }
+      // is this logic correct?
       rotate_chi(delta_delta_x, delta_delta_y);
    }
 }
@@ -157,7 +158,7 @@ graphics_info_t::on_glarea_drag_update_secondary(GtkGestureDrag *gesture,
                                                  GtkWidget *gl_area) {
 
    if (false)
-      std::cout << "on_glarea_drag_update_secondary() " << std::endl;
+      std::cout << "graphics_info_t::on_glarea_drag_update_secondary() " << std::endl;
 
    auto do_view_zoom = [] (double drag_delta_x, double drag_delta_y) {
       mouse_zoom(drag_delta_x, drag_delta_y);
@@ -211,7 +212,7 @@ graphics_info_t::on_glarea_drag_update_secondary(GtkGestureDrag *gesture,
                if (in_moving_atoms_drag_atom_mode_flag) {
                   if (last_restraints_size() > 0) {
                      // move an already picked atom
-                     move_atom_pull_target_position(x, y);
+                     move_atom_pull_target_position(x, y, control_is_pressed);
                      handled = true;
                   }
                } else {
@@ -280,8 +281,9 @@ graphics_info_t::on_glarea_drag_begin_middle(GtkGestureDrag *gesture, double x, 
    // note to self middle mouse pick happens on button press, but the
    // recentre happens on button release
 
-   std::cout << "in on_glarea_drag_begin_middle() set previous position and drag_begin to "
-             << x << " " << y << std::endl;
+   if (false)
+      std::cout << "in on_glarea_drag_begin_middle() set previous position and drag_begin to "
+                << x << " " << y << std::endl;
 
 }
 
@@ -311,6 +313,7 @@ graphics_info_t::on_glarea_drag_end_middle(GtkGestureDrag *gesture, double drag_
             add_picked_atom_info_to_status_bar(nearest_atom_index_info.imol,
                                                nearest_atom_index_info.atom_index);
          } else {
+            // std::cout << "debug:: on_glarea_drag_end_middle() calling symmetry_atom_pick()" << std::endl;
             coot::Symm_Atom_Pick_Info_t sap = symmetry_atom_pick();
             if (sap.success == GL_TRUE) {
                if (is_valid_model_molecule(sap.imol)) {
@@ -354,6 +357,11 @@ graphics_info_t::on_glarea_click(GtkGestureClick *controller,
    bool clicked = check_if_hud_bar_clicked(x,y);
 
    // std::cout << "status for HUD bar clicked: " << clicked << " x " << x << " y " << y << std::endl;
+
+   if (! clicked)
+      clicked = check_if_hud_rama_plot_clicked(x,y);
+
+   // std::cout << "status for HUD Rama clicked: " << clicked << std::endl;
 
    if (clicked) {
       // the action has occured in above function
@@ -465,15 +473,18 @@ graphics_info_t::on_glarea_click(GtkGestureClick *controller,
                if (naii.success) {
                   mmdb::Atom *at = moving_atoms_asc->atom_selection[naii.atom_index];
                   moving_atoms_currently_dragged_atom_index = naii.atom_index;
-                  std::cout << "debug:: in on_glarea_click() picked an intermediate atom " << coot::atom_spec_t(at) << std::endl;
+                  // std::cout << "debug:: in on_glarea_click() picked an intermediate atom " << coot::atom_spec_t(at) << std::endl;
                }
             }
 
             if (! handled) {
 
+               // 20240902-PE maybe it should run (and act on the symmtry atom pick) if this is a middle-mouse click?
+
                // does this ever run?
-               // std::cout << "Symmetry atom pick here B - does this run? When? " << std::endl;
-               coot::Symm_Atom_Pick_Info_t sap = symmetry_atom_pick();
+               // 20240902-PE yes it does - maybe it shouldn't.
+               // std::cout << "debug:: click handler: Symmetry atom pick here B - does this run? When? " << std::endl;
+               // coot::Symm_Atom_Pick_Info_t sap = symmetry_atom_pick();
             }
          }
       }

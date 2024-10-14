@@ -1,14 +1,14 @@
 ---
 layout: post
 title: "Moorhen Tutorial 1: Fix up the Cyclin-Dependent Kinase"
-date: Wed 22 Mar 17:41:45 GMT 2023
+date: Tue 3 Sep 14:41:45 GMT 2024
 ---
 
 Welcome to Moorhen ("Coot on the Web").
 
 ## Getting Started
 
-![layout](https://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/web/tutorial/images/moorhen-gui-items.png)
+[layout](https://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/web/tutorial/images/moorhen-gui-items.png)
 
 
   - Open a web browser window and point it at [moorhen.org](https://moorhen.org).
@@ -36,7 +36,11 @@ You can change the speed that moving the mouse spins the view:
   - **Preferences** &rarr; "Mouse Sensitivity" &rarr; 0.4 (# for example)
   - Click off the Preferences dialog to make the dialog disappear.
 
-  - Similarly, you can change the thickness of the map lines if you wish.
+  - Likewise one can change the sensitivity of the zoom using the "Mouse wheel zoom sensitivity" slider.
+    I find a value of around 7 to 8 to be more useful than the default.
+
+  - Similarly, you can change the thickness of the map lines if you wish using "Map contour settings..."
+
   - Use "[" and "]" on the keyboard to adjust the radius of the density.
   - Ctrl middle-mouse scroll to change the contour level (one step at time seems good to me).
 
@@ -45,20 +49,11 @@ You can change the speed that moving the mouse spins the view:
 Our job is to fix and amend the protein model in a way that is consistent with the data. Let's first look
 at the Ramachandran plot:
 
-## Maps and Models
+## Models
 
-  - Click on the **Right side tab**
-
-_Moorhen display a drawer with "Models and Maps", "Validation Tools" and "Console"_
-
-  - Click on the **Models and Maps** tab
-
-_Moorhen expands the tab to display additional information_.
-
-Initially the background of the drawer is semi-transparent,
-
-  - Put your cursor over the drawer (and the draw will become opaque).
-
+   - Click on the **Models** button
+You will see buttons for various representation styles for the model.
+   - Click on the **Sequences** accordian button
 You will see a sequence viewer - let's use that to move around the structure. Click on a few letters (that represent the residues in the protein). Notice that the map density mesh is redrawn around the new centre.
 
 See the grey rectangle over the sequence numbers?
@@ -74,22 +69,27 @@ Notice that there are "No ligands." We will add one later.
 
 For higher-end computers we can use a smoother representation of the bonds and atoms.
 
- - [Optional] Click on the gear icon, click on the "Bond Settings" and change the "Smoothness" to **Nice**.
+ - Click on the Settings icon in the vertical toolbar
+ - Change the "Bond Smoothness" to **Nice**.
 
-Below the card for the protein, you will see the cards for the maps (the 2Fo-Fc-style map has a blue icon and the difference map has an icon with red and green). You can use the sliders there to adjust the contour level. It's a bit high at the moment, so click or slide the slider for the 2Fo-Fc map so that the level is about 0.443 or thereabouts. Set the difference map to a level of around 0.534.
-(I find that clicking (click and release) on the slider to be monre convenient than trying to "slide" the slider using click and drag).
+ - Use the **X** icon to close the **Models** dialog (as you normally would, to close a window).
 
-  - Shut the draw and then you can also use Ctrl scroll-wheel scroll to change the contour level
+## Maps
+   - Click on the **Maps** button
+
+The 2Fo-Fc-style map has a blue icon and the difference map has an icon with red and green. You can use the sliders there to adjust the contour level. Click or slide the slider for the 2Fo-Fc map so that the level is about 0.42 (1.40 rmsd) or thereabouts. Set the difference map to a level of around 0.53 (3.6 rmsd) (if it isn't already).
+
+  - Close the dialog and then you can also use _Ctrl scroll-wheel scroll_ to change the contour level.
 
 ## Validation Tools
 
-  - Open the drawer
+  - Open the **Validation** window
 
-  - Click on the **Validation tools** tab
-
-  - Choose **Ramachandran Plot** in the **Tool** option menu
+  - Choose **Ramachandran Plot**
 
 _Moorhen shows the Ramachandran Plot for the "A" chain of this protein_
+
+   - You can resize the dialog for a better view of the plot (pull slowly on the bottom right triangle).
 
 You will see that there are several interesting red spots.
 
@@ -97,64 +97,68 @@ You will see that there are several interesting red spots.
 
 _Moorhen will put residue A180 at the centre of the screen_
 
-Take a look at the region... (You can slide the drawer closed for a better look).
+Take a look at the region...
 
-Hmmm... the carbonyl oxygen atoms are a bit close... Are there any other Ramachandran outliers in the area?
+Hmmm... the carbonyl oxygen atoms are a bit close to each other. Are there any other Ramachandran outliers in the area?
 
-   - To measure the distance between atoms, hold M and click on an atom, then (with "M" still pressed) click
-     on another atom.
+   - To measure the distance between atoms, hold M and click on an atom, then (with "M" still pressed) click on another atom.
 
-   - In the drawer, click on **Models and maps**,
-   - then click on the **Rama** box for this protein model.
+2.26 A is too close.
 
-_Moorhen displays Ramachandran balls that represent the probability of those phi, psi angles for that residue_
+  - To undisplay the distance, press the "C" key.
+
+   - Click on **Models**,
+   - then click on the **Rama Balls** button for this protein model.
+
+_Moorhen displays Ramachandran balls that uses colour to represent the probability of those phi, psi angles for that residue_
 
 Residue A180 has a red ball and just upstream at A178 the LYS has a orange ball. Maybe both of these can be improved.
 
-Notice that there is a green blob close to the N of A180. Maybe it would be better that were fitted by the carbonyl of the peptide. Let's try that:
+Notice that there is a green blob close to the N of A180. Maybe it would be better if that blob were fitted by the carbonyl of the peptide. So let's try that:
 
 ## Flipping a Peptide
 
- - Along the bottom there is a tool drawer than can be expanded - do so.
+ - Click middle-mouse the N atom of residue A 180
+ - Click right-mouse on an atom in the peptide (O atom of 179)
 
-_Moorhen displays a toolbar with icons for modelling (with which you may already be familiar if you have used Coot)_
+_Moorhen displays a grid with icons for modelling (with which you may already be familiar if you have used Coot)_
 
 As you move the mouse over the icons in the toolbar, you will see a tooltip for that icon.
 
   - To flip the peptide you want to use the "Flip Peptide" button. Click it.
 
-_A red box appears around the icon to let you know that "Flip Peptide" is the active tool_
-
-  - Now click on the peptide of A179. Use the Atom Navigator (top right) to find it.
-  
-  
-  (Moorhen uses transparent golden balls to let you know which will be the picked atom or residue when you left-click to pick it.)
 
 _Moorhen flips the Peptide and the Ramachandran ball for that residues turns green_
 
-Yay. Progress. Let's see if we can do the same for residue A178.
+Yay. Progress. Let's see if we can do the same for peptide bond bettwen A177 and A178.
 
--  Click on the "Flip Peptide" button again and click on the carbonyl oxygen atom of A177.
+- Bring A177 CA to the centre of the screen
+- Click right-mouse over a peptide and then
+- Click on the "Flip Peptide" button
 
 _Moorhen flips the peptide and the Ramachandran ball for 177 turrns green_
 
 More progress. Good stuff.
 
-  - Look at the Ramachandran Plot in the draw. Notice that the red spots for the problematic residues have disappeared.
+  - Look at the Ramachandran Plot again. Notice that the red spots for the problematic residues have disappeared.
 
-**Navigation tip**: Use the middle mouse button click over an atom to put the centre of the residue at the centre of the screen. Use Alt left mouse to put the clicked atom at the centre of the screen.
+**Navigation tip 1**: Use middle mouse button click on an atom to put the centre of the residue at the centre of the screen. Use Alt left mouse to put the clicked atom at the centre of the screen.
+
+**Navigate tip 2**: To go to a specific residue, use **Edit** &rarr; **Go to...** and in the "Atom selection" entry
+type the residue selection, e.g. "//A/156" to mean residue 156 in the "A" chain.
 
 ## Real Space Refinement
 
-  - Click on the "Refine Residues" button and choose "Sphere" in the option menu. Click on an atom in residue A178.
+  - Right click on an atom in residue A179
+  - Click on the "Refine Residues" button (the icon is a target).
 
-_Moorhen refines the sphere of residues_
+_Moorhen refines residues along the chain_
 
-Now the local backbone fits quite nicely into the blue map.
+Now the local backbone fits quite nicely into the blue map (but the Rama balls may not be completely green).
 
 ## Connect the Maps: Updating Maps
 
-Wouldn't it be nice though, if the difference map updated, so that if you add atoms to green blobs or removed them from red blobs then those blobs would disappear?
+Wouldn't it be nice though, if the difference map updated when you add atoms to green blobs or removed them from red blobs. A good correction of the model would then make those blobs disappear.
 
 Let's try that:
 
@@ -166,13 +170,11 @@ _Moorhen will display a "toast" top left informing you of the current R-factor a
 
 ## Difference Map Peaks
 
-In the drawer, the currently active tool in the Validation option menu is the **Ramachandran Plot**
+In the **Validation** dialog, the active tool in the Validation option menu is the **Ramachandran Plot**
 
  - Let's change that to **Difference Map Peaks**.
 
 _Moorhen displays the difference map peaks in a waterfall plot_
-
- - Use the slider to change the RMSD to about 5.0.
 
 On the left of the waterfall plot are the most positive peaks (and if there were any the most negative peaks would be displayed on the far right).
 
@@ -206,7 +208,7 @@ You will notice that that the Difference Map Peaks graph has been updated too - 
 You will notice that they are mostly peaks of waters. We could add waters one by one, but a more
 automated method is to do many at the same time.
 
-  - **Ligand** &rarr; **Add waters...** &rarr; **OK**
+  - **Calculate** &rarr; **Add waters...** &rarr; **OK**
 
 This will add around 100 waters. And as above, the maps and the R-factors will update and we will get many Moorhen points. The map should improve a bit so that the ligand is more easy to make out.
 
@@ -216,7 +218,7 @@ This will add around 100 waters. And as above, the maps and the R-factors will u
 
 What this? It's a flipped peptide - let's flip it back to where it should be. But having done that, what do you notice? Let's use Moorhen's clash analysis:
 
-  - In the model molecule card for the tutorial structure you will see a box labelled **Cont.** - click it.
+  - In the Model window for the tutorial structure you will see a box labelled **Cont. dots** - click it.
 
 _Moorhen display contact dots and clash interactions_
 
@@ -224,19 +226,20 @@ Wooh! Pink sticks. Bad news! So let's also flip the pepide on the next rung of t
 
 _The contact dots between A194 and A197 disappear_
 
-  - OK, you can turn off the contact dots for now by unclicking the **Cont.** box in the molecule card.
+  - OK, you can turn off the contact dots for now by unclicking the **Cont. dots** box in the Model window.
 
 ## Change the Residue Type
 
 Now navigate to residues A193. What do the maps tell you is going on here? What is the residue type? What does the model say? What does the map say?
 
-OK, so first let's fill the side-chain with the atoms of the type from the main-chain atoms: "TYR" - in the lower toolbar, click on "Auto-fit Rotamer" and then click on an atom in residue A193.
+OK, so first let's fill the side-chain with the atoms of the type from the main-chain atoms: "TYR" - use right-mouse
+to get the context-sensitive menu and click on the "Auto-fit Rotamer" button (top left).
 
 What do we see? What does that suggest?
 
 It suggests that the sequence of the model doesn't match the sequence of the protein from which the data were collected. OK, so let's mutate it.
 
-  - In the lower toolbar, click on the "Simple Mutate" button, then from the residues type chooser currently "ALA (A)" choose "PHE (F)" then click on an atom in residue A193.
+  - In the context-sensitive menu, click the "Mutate Residue" button (it's the radtion symbol), then from the residues type chooser currently "ALA (A)" choose "PHE (F)"
 
 _Moorhen updates the map so that the red blob goes away_
 
@@ -248,7 +251,7 @@ What do we see? What should it be instead?
 
 OK, so let's mutate it:
 
-  - Use "Simple Mutate", change the type to "TYR (Y") and click on an atom in the residues A169.
+  - Use the (right-mouse menu) "Mutate Residue" button change the type to "TYR (Y")
 
 (More Moorhen Points - yay).
 
@@ -260,13 +263,13 @@ Can you find a negative difference map peak that is close to resiude A187? Have 
 
 ## Rotamers
 
-In the drawer, in the card for the protein molecule, click the box for "Rota"
+In the Model window, click the box for "Rota. dodec"
 
 _Moorhen displays rotamer dodecamers coloured by rotamer probability_
 
- - So let's change the rotamer using the "Auto-fit Rotamer" button.
-Then click on atom in A187.
- - If the side-chain doesn't lie flat in its density, you can use the target button "Refine Residues" adn then click on the atom in A187 to give it a bit of Real Space Refinement that will sort of the fitting.
+Yellow is not so high probability. Can we find something with higher probability than the current rotamer?
+
+ - Let's change the rotamer using the "Auto-fit Rotamer" button.
 
 _On improvement of the rotamer probability, Moorhen will change the colour of the dodecahedron to be more green_
 
@@ -280,52 +283,46 @@ OK, now it's time to fit the ligand!
 
 Several of the top 5 peaks should now correspond to the ligand.
 
-![ligand](https://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/web/tutorial/images/LZA-coot-render-v2.png)
+[ligand](https://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/web/tutorial/images/LZA-coot-render-v2.png)
 
-  - **Ligand** &rarr; **Get Monomer** &rarr; LZA &rarr; **OK**
+  - **Ligand** &rarr; **Get Monomer** &rarr;
+  - Add "LZA" in the "Monomer identifier" entry &rarr; **OK**
 
 _Moorhen imports the LZA ligand_
 
 OK, fine. Now let's undisplay it:
 
-  - In the drawer, the bottom card should now be the card for the newly imported ligand ("#3 Mol LZA"). Click on the eye icon to undisplay the ligand
+  - In the Model window, the bottom card should now be the card for the newly imported ligand ("#3 Mol LZA"). Click on the eye icon to undisplay the ligand
 
 _Moorhen changes the icon to an uncrossed eye and the ligand disappears_
 
-  - **Ligand** &rarr; **Fit ligand here...**
+  - **Ligand** &rarr; **Find ligand...**
 
-  - Change the option menu labelled "Ligand molecule" so that it reads "3: LZA" then click **OK**.
+  - Check the options then click **Find**.
 
-_Moorhen fits the ligand in the local blob_
+_Moorhen presents a new dialog saying that 1 possible ligand location_
 
-It should be reasonably close but not exact because the algorithm didn't use conformational variation.
+To visualize the ligand, click on the "boxed circle" icon and the ligand will appear in the density.
 
-## Merge the Ligand
+It should be a reasonably close fit but not exact because the algorithm didn't use conformational variation.
 
-So let's add the ligand to the protein model:
+To refine ligand click the "target" icon in that dialog.
 
- - **Edit** &rarr; **Merge molecules...**
-  - Change the entry in the option menu labelled "From molecule" so that it reads "4: lig_4"
-   - Click **OK**.
+To merge the ligand, use the "arrow" icon in that dialog.
 
 _Moorhen updates the maps so that the difference map blobs change_
 
-Now let's refine the ligand and the surrounding residues:
-
- - In the lower toolbar, click "Refine Residues", change the option menu to "SPHERE" then click on an atom in the ligand
-
-_Moorhen updates the maps so that there are no difference maps peaks left on the ligand_
-
 ## Add a Water
 
-  - Navigate to a water peak using middle-mouse click and drag (or Shift-Alt Left-Mouse on a PC) to drag
+  - Navigate to the nearby water peak using middle-mouse click and drag (or Shift-Alt Left-Mouse on a PC) to drag
     the view to the water blob.
   - You can also use the arrow-keys to pan the view
 
 Let's add a water here
 
-  - In the bottom toolbar, click on the **Add simple** button
-  - Change the option menu to read "HOH"
+  - In **Edit** menu click on the **Add simple** menu item
+  - Change the option menu to read "HOH" (if needed)
+  - **OK**
 
   _Moorhen adds a water at the centre of the screen_
 
@@ -333,10 +330,9 @@ There are several water peaks in the map similar to this.
 
 At some stage, when you add a water, you will see a the contours of negative density over part or all the water peak. What does that mean?
 
-  ## More Validation Tools
+## More Validation Tools
 
-  - Open the drawer
-  - Click on **Validation Tools**
+  - Click the **Validation** button
   - Click on **Validation Plot**
 
 _Moorhen displays interactive validation graphs._
@@ -352,17 +348,18 @@ You should be able to collect about 1800 Moorhen points. Maybe more!
   - Using the cards in the drawer, undisplay the maps using the eye icon
   - Click on "Bonds" to undisplay the "Bonds" representation of the model
   - Likewise undisplay the Rama ball and Rota dodecs if you have the displayed
-  - Click on **Lig.** to display the ligand in the model
-  - Click on **Ribb.** to display the model in Ribbon mode
+  - Click on **Ligands** to display the ligand in the model
+  - Click on **Ribbons** to display the model in Ribbon mode
 
 To navigate to the ligand:
 
   - **Ligand** &rarr; **Centre on ligand...**
-  - Click "+"
-  - Click the "/1/A/1(LZA)" label
-  - **View** &rarr; **Set background colour** - change it if you wish
-  - **View** &rarr; **Clipping and fogging...**
-  - Adjust the sliders to make the ligand more clearly visible
+  - Click "mol-1"
+  - Click "Chain A"
+  - Click the "/1/A/301(LZA)" label
+
+  - **View** &rarr; **Scene Setting** &rarr; **Background Colour** - change it if you wish
+  - Adjust the sliders for clipping and fogging to make the ligand more clearly visible
   - **OK**
 
 Use keyboard "S" to activate the "in application" screen capture.
@@ -370,8 +367,7 @@ Use keyboard "S" to activate the "in application" screen capture.
 
 ## Export Your Molecule
 
-  - In the drawer, in the card for the model molecule, click the gear icon
-  - and choose "Download molecule" 
+  - In the for the Model window, click the "download" icon
 
 Then it's time to think about Reciprocal Space Refinement.
 

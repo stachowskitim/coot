@@ -28,6 +28,7 @@
 #include "Python.h"
 #endif
 
+#include "utils/xdg-base.hh"
 #include "graphics-info.h"
 #include "rotate-translate-modes.hh"
 #include "rotamer-search-modes.hh"
@@ -67,7 +68,11 @@ bool graphics_info_t::prefer_python = 0; // no GUILE or PYTHON
 bool graphics_info_t::prefer_python = 1; // Default: yes in Windows
 #endif // windows test
 
+bool graphics_info_t::graphics_is_gl_es = false;
+
 bool graphics_info_t::using_trackpad = false;
+
+logging graphics_info_t::log;
 
 bool graphics_info_t::use_gemmi = false;
 short int graphics_info_t::python_at_prompt_flag = 0;
@@ -89,6 +94,10 @@ ctpl::thread_pool graphics_info_t::static_thread_pool(coot::get_max_number_of_th
 #endif // HAVE_BOOST_BASED_THREAD_POOL_LIBRARY
 
 clipper::Xmap<float> *graphics_info_t::dummy_xmap = new clipper::Xmap<float>;
+std::vector<std::pair<std::string, clipper::Xmap<float> > > graphics_info_t::map_partition_results;
+int graphics_info_t::map_partition_results_state = 0; // inactive
+std::string graphics_info_t::map_partition_results_state_string; // "Done A Chain" etc.
+
 
 //WII
 #ifdef WII_INTERFACE_WIIUSE
@@ -289,6 +298,7 @@ double graphics_info_t::drag_begin_x = 0.0;
 double graphics_info_t::drag_begin_y = 0.0;
 double graphics_info_t::mouse_x = 0.0;
 double graphics_info_t::mouse_y = 0.0;
+double graphics_info_t::mouse_speed = 2.0;
 std::pair<double, double> graphics_info_t::mouse_previous_position = std::make_pair(0.0, 0.0);
 
 // residue reorientation on "space"
@@ -745,6 +755,8 @@ short int graphics_info_t::moving_atoms_asc_type = coot::NEW_COORDS_UNSET; // un
 int graphics_info_t::imol_moving_atoms = 0;
 coot::extra_restraints_representation_t graphics_info_t::moving_atoms_extra_restraints_representation;
 
+bool graphics_info_t::noughties_physics = false;
+
 bool graphics_info_t::draw_it_for_moving_atoms_restraints_graphics_object = false;
 bool graphics_info_t::draw_it_for_moving_atoms_restraints_graphics_object_user_control = false;
 int graphics_info_t::imol_refinement_map = -1; // magic initial value "None set"
@@ -896,7 +908,7 @@ float graphics_info_t::map_radius_slider_max = 50.0;
 short int graphics_info_t::rotate_colour_map_on_read_pdb_flag = 1; // do it.
 short int graphics_info_t::rotate_colour_map_on_read_pdb_c_only_flag = 1; // rotate Cs only by default
 float     graphics_info_t::rotate_colour_map_on_read_pdb = 21.0;  // degrees
-float     graphics_info_t::rotate_colour_map_for_map = 14.0;  // degrees
+float     graphics_info_t::rotate_colour_map_for_map = 31.0; // 20240907-PE 14.0;  // degrees
 
 float graphics_info_t::goodsell_chain_colour_wheel_rotation_step = 0.221;
 
@@ -1664,7 +1676,8 @@ bool           graphics_info_t::draw_background_image_flag = false; // uses "bac
 
 float graphics_info_t::pull_restraint_neighbour_displacement_max_radius = 0.0; // we don't see it initially.
 
-coot::command_history_t graphics_info_t::command_history;
+xdg_t xdg;
+coot::command_history_t graphics_info_t::command_history = coot::command_history_t(xdg);
 
 std::vector<Instanced_Markup_Mesh> graphics_info_t::instanced_meshes;
 
@@ -1821,3 +1834,6 @@ std::vector<coot::positron_metadata_t> graphics_info_t::positron_metadata;
 
 bool graphics_info_t::tomo_picker_flag = false;
 graphics_info_t::tomo_view_info_t graphics_info_t::tomo_view_info;
+
+std::pair<bool, std::string> graphics_info_t::servalcat_fofc    = std::pair<bool, std::string> (false, "");
+std::pair<bool, std::string> graphics_info_t::servalcat_refine  = std::pair<bool, std::string> (false, "");

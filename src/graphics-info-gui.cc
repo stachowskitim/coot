@@ -75,7 +75,6 @@
 #include "skeleton/BuildCas.h"
 
 #include "gl-matrix.h" // for baton rotation
-#include "trackball.h" // for baton rotation
 
 #include "analysis/bfkurt.hh"
 
@@ -1655,7 +1654,7 @@ graphics_info_t::residue_info_add_occ_edit(coot::select_atom_info sai, float val
 void
 graphics_info_t::apply_residue_info_changes() {
 
-   std::cout << "New apply_residue_info_changes() " << residue_info_n_atoms << std::endl;
+   std::cout << "New apply_residue_info_changes(): n_atoms: " << residue_info_n_atoms << std::endl;
 
    GtkWidget *grid = widget_from_builder("residue_info_atom_grid");
 
@@ -1666,18 +1665,25 @@ graphics_info_t::apply_residue_info_changes() {
       for (int iat=1; iat <= residue_info_n_atoms; iat++) {
          GtkWidget *occ_entry      = gtk_grid_get_child_at(GTK_GRID(grid), 1, iat);
          GtkWidget *b_factor_entry = gtk_grid_get_child_at(GTK_GRID(grid), 2, iat);
+         GtkWidget *alt_conf_entry = gtk_grid_get_child_at(GTK_GRID(grid), 4, iat); //    in above: left_attach = 4;
          if (GTK_IS_EDITABLE(occ_entry)) {
             if (GTK_IS_EDITABLE(b_factor_entry)) {
                const gchar *t_occ  = gtk_editable_get_text(GTK_EDITABLE(occ_entry));
                const gchar *t_bfac = gtk_editable_get_text(GTK_EDITABLE(b_factor_entry));
+               const gchar *t_altconfc = gtk_editable_get_text(GTK_EDITABLE(alt_conf_entry));
                try {
                   float f_occ  = coot::util::string_to_float(std::string(t_occ));
                   float f_bfac = coot::util::string_to_float(std::string(t_bfac));
+                  std::string t_alt_conf;
+                  if (t_altconfc)
+                     t_alt_conf = t_altconfc;
                   coot::select_atom_info *ai_p = static_cast<coot::select_atom_info *>(g_object_get_data(G_OBJECT(occ_entry), "select_atom_info"));
                   if (ai_p) {
                      coot::select_atom_info &ai(*ai_p);
                      ai.add_b_factor_edit(f_bfac);
                      ai.add_occ_edit(f_occ);
+                     std::cout << "add_altloc_edit() " << t_alt_conf << std::endl;
+                     ai.add_altloc_edit(t_alt_conf);
                      residue_info_edits.push_back(ai);
                   }
                }
@@ -4251,7 +4257,7 @@ graphics_info_t::fill_difference_map_peaks_button_box() {
    GtkWidget *pane = widget_from_builder("main_window_graphics_rama_vs_graphics_pane");
    int pos = gtk_paned_get_position(GTK_PANED(pane));
    if (pos < 300)
-      gtk_paned_set_position(GTK_PANED(pane), 300);
+      gtk_paned_set_position(GTK_PANED(pane), 380);
 
    GtkWidget *outer_vbox = widget_from_builder("dialog-vbox78");
    gtk_widget_set_visible(outer_vbox,   TRUE);
@@ -4280,6 +4286,13 @@ graphics_info_t::show_diff_map_peaks_vbox(int imol_map, int imol_coords,
 
    // GtkWidget *w = create_diff_map_peaks_dialog();
    GtkWidget *peaks_vbox = widget_from_builder("diff_map_peaks_vbox");
+
+   if (false) {
+      GtkAllocation allocation;
+      gtk_widget_get_allocation(peaks_vbox, &allocation);
+      std::cout << "DEBUG:: peaks vbox allocation "
+                << allocation.width << " " << allocation.height << std::endl;
+   }
 
    char *n_sigma_cs = new char[20];
    std::string ns = std::to_string(n_sigma);
@@ -4529,7 +4542,8 @@ int
 graphics_info_t::add_molecular_representation(int imol,
                                               const std::string &atom_selection,
                                               const std::string &colour_scheme,
-                                              const std::string &style) {
+                                              const std::string &style,
+                                              int secondary_structure_usage_flag) {
 
    std::cout << "g.add_molecular_representation(): atom_sel: \"" << atom_selection << "\" "
              << "colour-scheme: \"" << colour_scheme << "\" "
@@ -4541,7 +4555,7 @@ graphics_info_t::add_molecular_representation(int imol,
 
    attach_buffers();
 
-   int status = molecules[imol].add_molecular_representation(atom_selection, colour_scheme, style);
+   int status = molecules[imol].add_molecular_representation(atom_selection, colour_scheme, style, secondary_structure_usage_flag);
 
    update_molecular_representation_widgets();
    graphics_draw();
@@ -4812,11 +4826,24 @@ graphics_info_t::set_tomo_section_view_section(int imol, int section_index) {
 
       float mean =    molecules[imol].map_mean();
       float std_dev = molecules[imol].map_sigma();
-      float data_value_for_top    = mean + 2.5f * std_dev;
-      float data_value_for_bottom = mean - 1.5f * std_dev;
+      float data_value_for_top    = mean + 3.5f * std_dev; // was  2.5
+      float data_value_for_bottom = mean - 2.0f * std_dev; // was -1.5
+
+      if (false) {
+         std::cout << "-------- current texture-meshes: " << std::endl;
+         for (const auto &tm : texture_meshes)
+            std::cout << "    " << tm.get_name() << std::endl;
+      }
 
       // maybe I should replace the texture rather than delete all and create a new one.
-      texture_meshes.clear();
+      // texture_meshes.clear();
+
+      auto eraser = [] (const TextureMesh &tm) {
+         return (tm.get_name().find("-section") != std::string::npos);
+      };
+
+      texture_meshes.erase(std::remove_if(texture_meshes.begin(), texture_meshes.end(), eraser),
+                           texture_meshes.end());
 
       // auto tp_1 = std::chrono::high_resolution_clock::now();
       // auto tp_2 = std::chrono::high_resolution_clock::now();
@@ -4829,23 +4856,25 @@ graphics_info_t::set_tomo_section_view_section(int imol, int section_index) {
          float z_pos = 0.0f;
          if (use_z_translation) z_pos = m.z_position;
 
+         // std::cout << "Z-section x_len " << x_len << " y_len " << y_len << std::endl;
+
          attach_buffers();
          GLenum err = glGetError();
          if (err) std::cout << "GL ERROR:: tomo_section() A " << _(err) << "\n";
          Texture t(m, "mini-texture Z-section");
          err = glGetError();
          if (err) std::cout << "GL ERROR:: tomo_section() B " << _(err) << "\n";
-         TextureInfoType ti(t, "mini-texture");
+         TextureInfoType ti(t, "mini-texture Z-section");
          err = glGetError();
          if (err) std::cout << "GL ERROR:: tomo_section() C " << _(err) << "\n";
          ti.unit = 0; // what is this?
          err = glGetError();
          if (err) std::cout << "GL ERROR:: tomo_section() D " << _(err) << "\n";
-         TextureMesh tm("mini-texture mesh");
+         TextureMesh tm("Tomo texture-mesh Z-section");
          tm.add_texture(ti);
          err = glGetError();
          if (err) std::cout << "GL ERROR:: tomo_section() E " << _(err) << "\n";
-         tm.setup_tomo_quad(x_len, y_len, 0.0f, 0.0f, z_pos);
+         tm.setup_tomo_quad(x_len, y_len, 0.0f, 0.0f, z_pos, false);
          // auto tp_2 = std::chrono::high_resolution_clock::now();
          err = glGetError();
          if (err) std::cout << "GL ERROR:: tomo_section() F " << _(err) << "\n";
@@ -4861,6 +4890,7 @@ graphics_info_t::set_tomo_section_view_section(int imol, int section_index) {
 
       if (do_X_and_Y_sections) {
          attach_buffers();
+         // section index is now a mess.
          int section_index_X = gs.nu()/2;
          int section_index_Y = gs.nv()/2;
          section_index_X = section_index;
@@ -4880,21 +4910,21 @@ graphics_info_t::set_tomo_section_view_section(int imol, int section_index) {
          tm_x.add_texture(ti_x);
          tm_y.add_texture(ti_y);
 
-         float offset_x_X_section = - c_cell.c() - c_cell.a() * 0.15f;
+         float offset_x_X_section = - c_cell.c() - c_cell.a() * 0.05f;
          float offset_y_X_section = 0.0f;
          float offset_x_Y_section = 0.0f;
          float offset_y_Y_section = c_cell.b() + c_cell.b() * 0.1f;
 
-         offset_x_X_section -= c_cell.b() * 0.8f;
-
-         tm_x.setup_tomo_quad(m_x.x_size, m_x.y_size, offset_x_X_section, offset_y_X_section, m_x.z_position);
-         tm_y.setup_tomo_quad(m_y.x_size, m_y.y_size, offset_x_Y_section, offset_y_Y_section, m_y.z_position);
+         tm_x.setup_tomo_quad(m_x.x_size, m_x.y_size, offset_x_X_section, offset_y_X_section, m_x.z_position, true);
+         tm_y.setup_tomo_quad(m_y.x_size, m_y.y_size, offset_x_Y_section, offset_y_Y_section, m_y.z_position, false);
 
          texture_meshes.push_back(tm_x);
          texture_meshes.push_back(tm_y);
-
          m_x.clear();
-         // m_y.clear();
+         m_y.clear();
+
+         GLenum err = glGetError();
+         if (err) std::cout << "GL ERROR:: set_tomo_section_view_section() G " << _(err) << "\n";
       }
 
       graphics_draw();

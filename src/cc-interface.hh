@@ -358,6 +358,19 @@ int handle_read_ccp4_map(const std::string &filename, int is_diff_map_flag);
 
 /*! \brief this reads a EMDB bundle - I don't think they exist any more */
 int handle_read_emdb_data(const std::string &dir_name);
+
+void show_map_partition_by_chain_dialog();
+
+//! Use the function for scriptng
+std::vector<int> map_partition_by_chain(int imol_map, int imol_model);
+
+//! Use the function for use in the GUI (non-blocking, no results returned)
+void map_partition_by_chain_threaded(int imol_map, int imol_model);
+
+//! the map should be displayed and not a difference map
+void use_vertex_gradients_for_map_normals_for_latest_map();
+
+
 //! \}
 
 #ifdef SWIG
@@ -434,6 +447,17 @@ PyObject *multi_residue_torsion_fit_py(int imol, PyObject *residues_specs_py, in
 
 // Where should this go?
 void import_bild(const std::string &file_name);
+
+// resolution in A.
+void servalcat_fofc(int imol_model,
+                    int imol_fofc_map, const std::string &half_map_1, const std::string &half_map_2,
+                    float resolution);
+
+//! resolution in A.
+//!
+void servalcat_refine(int imol_model,
+                      const std::string &half_map_1, const std::string &half_map_2,
+                      const std::string &mask_map, float resolution);
 
 /*  ------------------------------------------------------------------------ */
 /*                             Add an Atom                                   */
@@ -1393,7 +1417,7 @@ std::vector<int> ligand_search_make_conformers_internal();
 /*  ----------------------------------------------------------------------- */
 //                  animated ligand interactions
 /*  ----------------------------------------------------------------------- */
-void add_animated_ligand_interaction(int imol, const coot::fle_ligand_bond_t &lb);
+void add_animated_ligand_interaction(int imol, const pli::fle_ligand_bond_t &lb);
 
 
 /*  ----------------------------------------------------------------------- */
@@ -1480,6 +1504,9 @@ void unfullscreen();
 
 //! set the flag for use of trackpad - this moves around the mouse bindings internally.
 void set_use_trackpad(short int state);
+
+//! this is an alias for the above (at the moment).
+void set_use_primary_mouse_button_for_rotation(short int state);
 
 /*  ----------------------------------------------------------------------- */
 /*                  Abstraction of New molecule by symmetry functions       */
@@ -2371,6 +2398,7 @@ void set_tomo_picker_mode_is_active(short int state);
 
 #ifdef USE_PYTHON
 void tomo_map_analysis(int imol_map, PyObject *spot_positions);
+void tomo_map_analysis_2(int imol_map, PyObject *spot_positions);
 #endif
 
 //! negative becomes positive and positive becomes negative.

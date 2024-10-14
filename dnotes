@@ -1,5 +1,5 @@
 
-------
+	------
 Wed May  9 13:54:04 BST 2007
 
    Dirk Kostewa:
@@ -3980,19 +3980,15 @@ INFO::
    o Make sure RELEASE-NOTES are up to date and add a ----- marker at the top
      Make sure the release is called Release, not pre-release
    o change the version in configure.ac
-   o Artists acknowledged in glade/aboutdialog?
    o Correct the version in the about_dialog in the coot-gtk4.ui file
+   o Artists acknowledged in glade/aboutdialog?
    o Use []
-        Change the splash screen
+        Change the splash screen?
         Change the release name in the About dialog (aboutdialog) (not needed for bug fix)
         and copyright years.
-        To correct the transparency, duplicate layer, bucket fill with white
-        the bottom layer, merge and bevel 6.
-        git commit pixmaps/coot-0.9.5.png
-   o git add the new splash screen pixmap
-   o Change the pixmaps/Makefile.am for the current splash screen image
-   o are coot_wrap*cc generated correctly (no enhanced-ligand code)?
-     rm src/coot_wrap*.cc
+        git add the new splash screen pixmap
+        Change the pixmaps/Makefile.am for the current splash screen image
+
      configure with configure-it-for-release
      make clean && make
    o make dist to make a tar-ball
@@ -6785,6 +6781,14 @@ int main(int argc, char **argv) {
 
    // also see erase/remove_if usage in morph_fit_uncrunch().
 
+
+Here is a more simple example:
+
+      auto eraser = [] (const TextureMesh &tm) {
+         return (tm.get_name().find("-section") != std::string::npos);
+      };
+      texture_meshes.erase(std::remove_if(texture_meshes.begin(), texture_meshes.end(), eraser),
+                           texture_meshes.end());
 
 ---
 Tue Jul  3 17:14:08 BST 2012
@@ -11337,3 +11341,193 @@ Sun 21 Apr 15:55:19 BST 2024
    and Textualize:
 
    https://github.com/Textualize/textual
+
+---
+Wed  8 May 2024 21:58:43 PDT
+
+   Helix middle relative based on residue 2.
+   [2.7933435440063477, 3.245997428894043, 2.19431734085083]
+
+---
+
+   7GYY might be part of a series - useful for CFC
+
+Crystal structure of SARS-CoV-2 NSP3 Macrodomain in complex with ASAP-0013385-001 (and related)
+
+7GYY 7GYZ 7GZ0 7GZ1 7GZ2 7GZ3 7GZ4 7GZ5 7GZ6 7GZ7 7GZ8 7GZ9 7GZA 7GZB 7GZC 7GZD 7GZE 7GZF
+7GZG 7GZH 7GZI 7GZJ 7GZK 7GZL 7GZM 7GZN 7GZO 7GZQ 7GZR 7GZS 7GZT 7GZU 7GZV 7GZW 7GZX 7GZY
+7GZZ 7H00 7H01 7H02 7H03 7H04 7H05 7H06 7H07 7H08 7H09 7H0A 7H0B 7H0C 7H0D 7H0E 7H0F 7H0G
+7H0H 7H0I 7H0J 7H0K 7H0L 7H0M 7H0N 7H0O 7H0P 7H0Q 7H0R 7H0S 7H0T 7H0U 7H0V 7H0W 7H0X 7H0Y
+7H0Z 7H10 7H11 7H12 7H13 7H14 7H15 7H16 7H17 7H18 7H19 7H1A 7H1B 7H1C 7H1D 7H1E 7H1F 7H1G
+
+
+---
+Sun 26 May 2024 18:12:44 BST
+
+   how did I miss this?
+   https://link.springer.com/article/10.1186/s13321-020-00429-4
+   https://durrantlab.pitt.edu/autogrow4/
+
+
+---
+Sun 26 May 2024 22:02:51 BST
+
+   https://buildd.debian.org/status/package.php?p=coot
+
+   coot on armel needs to be linked with libatomic
+
+ libtool: compile:  g++ -DPACKAGE_NAME=\"coot\" -DPACKAGE_TARNAME=\"coot\" -DPACKAGE_VERSION=\"1.x-pre\" "-DPACKAGE_STRING=\"coot 1.x-pre\"" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DPACKAGE=\"coot\" -DVERSION=\"1.x-pre\" -DHAVE_STDIO_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_STRINGS_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_UNISTD_H=1 -DSTDC_HEADERS=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\" -DHAVE_OPENMP=1 -DHAVE_CXX11=1 -DHAVE_CXX_THREAD=1 -DHAVE_PYTHON=\"3.11\" "-DHAVE_BOOST=/**/" "-DHAVE_BOOST_THREAD=/**/" "-DHAVE_BOOST_PYTHON=/**/" -I. -I.. -DMAKE_ENHANCED_LIGAND_TOOLS -DCLIPPER_HAS_TOP8000 -I/usr/lib/i386-linux-gnu/include -DUSE_GEMMI=1 -DMMDB_HAS_LINK_DISTANCE -I/usr/include -I/usr/include/rdkit -DRDKIT_HAS_CAIRO_SUPPORT -pthread -I/usr/include -DUSE_PYTHON -Wdate-time -D_FORTIFY_SOURCE=2 -DHAVE_GSL -DPKGDATADIR=\"/usr/share/coot\" -g -O2 -ffile-prefix-map=/<<PKGBUILDDIR>>=. -fstack-protector-strong -Wformat -Werror=format-security -Wall -Wno-unused -std=c++17 -c atom-selection-container.cc  -fPIC -DPIC -o .libs/atom-selection-container.o
+In file included from /usr/include/gemmi/model.hpp:18,
+                 from /usr/include/gemmi/chemcomp_xyz.hpp:12,
+                 from /usr/include/gemmi/mmread.hpp:8,
+                 from atom-selection-container.cc:38:
+/usr/include/gemmi/elem.hpp: In function ‘double gemmi::molecular_weight(El)’:
+/usr/include/gemmi/elem.hpp:100:50: error: static assertion failed: Hmm
+  100 |   static_assert(weights[static_cast<int>(El::D)] == 2.0141, "Hmm");
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~
+/usr/include/gemmi/elem.hpp:100:50: note: the comparison reduces to ‘(2.01410000000000000142e+0l == 2.0140999999999999999e+0l)’
+/usr/include/gemmi/elem.hpp: In function ‘float gemmi::covalent_radius(El)’:
+/usr/include/gemmi/elem.hpp:141:48: error: static assertion failed: Hmm
+  141 |   static_assert(radii[static_cast<int>(El::D)] == 0.31f, "Hmm");
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+/usr/include/gemmi/elem.hpp:141:48: note: the comparison reduces to ‘(3.10000002384185791016e-1l == 3.10000000000000000002e-1l)’
+/usr/include/gemmi/elem.hpp: In function ‘float gemmi::vdw_radius(El)’:
+/usr/include/gemmi/elem.hpp:186:48: error: static assertion failed: Hmm
+  186 |   static_assert(radii[static_cast<int>(El::D)] == 1.2f, "Hmm");
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~
+
+
+---
+Fri 31 May 23:47:08 BST 2024
+
+#include <GraphMol/MolPickler.h>
+
+   auto test_pickle = [] (const RDKit::RWMol &mol) {
+      std::cout << "pickle mol" << std::endl;
+      RDKIT_GRAPHMOL_EXPORT RDKit::MolPickler mp;
+      std::string pickle_string;
+      mp.pickleMol(mol, pickle_string);
+
+      std::ofstream f("test-mol.pickle");
+      f << pickle_string;
+      f.close();
+   };
+
+---
+Sat 15 Jun 2024 14:17:30 BST
+
+   change the number of graphcs per page in R
+   par(mfrow=c(2,1))
+
+
+---
+Thu  4 Jul 2024 14:03:10 BST
+
+GTK4 pixel scaling
+
+https://www.reddit.com/r/GTK/comments/1c0xaar/gtk4_any_way_to_lock_the_size_of_a_logical_pixel/
+https://news.ycombinator.com/item?id=30796841
+
+-----
+Fri 26 Jul 2024 19:16:14 BST
+
+   modelangelo build example 24677
+   https://cosmic-cryoem.org/tools/modelangelo/
+
+---
+Fri Aug 30 09:04:18 PM BST 2024
+
+   Good example for tubes:
+   https://www.ebi.ac.uk/pdbe/entry/pdb/7uaa
+   There is a low resolution map EMD-26312
+
+---
+Fri Aug 30 09:11:27 PM BST 2024
+
+   DPS dataset is EMD-11210
+   https://www.ebi.ac.uk/emdb/EMD-11210
+   https://www.ebi.ac.uk/pdbe/entry/pdb/6zgl
+
+---
+Fri Sep  6 10:14:55 PM BST 2024
+
+   o Sketch out the widgets on paper
+   o Add a dialog to coot-gtk4.ui. Use the dialog snippet
+   o The button to invoke this is in a module?
+      - Look in python/coot_gui.py for neighboring menu item
+      - Add a add_action() line
+      - Add a wrapper and the function it wraps
+     else
+      - add your action to create-menu-item-actions.cc
+   o Add a coot api function that is called by the function
+     e.g. display the new dialog, which fills the entries
+          and comboboxes.
+
+     Use
+     g.new_fill_combobox_with_coordinates_options(combobox_2, callback, imol_active);
+     fill_combobox_with_map_options(combobox_1, callback);
+
+   o The response handler, on_new_function_dialog_response() is
+     added to glade-callback.cc, make it call an api cc-interface.hh
+     function
+
+   e.g. see commit 0aee836257053b5c9cdbceb6b3896b39cddfd797
+
+---
+Sat Sep  7 03:41:40 PM BST 2024
+
+   map_partition_by_chain_threaded() is a good example of non-blocking
+   map generation. It creates a detacted thread and a callback to look
+   for the results of the thread. The results are stored in graphics_info_t.
+
+   In this case the selector is a dialog, it should be, for such a small
+   interface, a main-window overlay.
+
+   see commit 0cf8c4679a84a6dd4f51011c49bbc489ad2cba83
+              d18123bc1ef908a2a833e05a6a02a5ccaa5ea615
+
+---
+Thu 22 Aug 2024 03:57:42 BST
+
+   what is the Intel Open Image Denoise 2.2 benchmark?
+
+
+---
+Thu  5 Sep 2024 16:41:54 BST
+
+   Plant FASTA genome
+   https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-59/fasta/chlamydomonas_reinhardtii/pep
+   more in
+   https://ftp.ensemblgenomes.ebi.ac.uk/pub/
+   you want the peps
+
+----
+
+        updateFloatParameter("ribbonStyleCoilThickness",0.3);
+        updateFloatParameter("ribbonStyleHelixWidth",1.2);
+        updateFloatParameter("ribbonStyleStrandWidth",1.2);
+        updateFloatParameter("ribbonStyleArrowWidth",1.5);
+        updateFloatParameter("ribbonStyleDNARNAWidth",1.5);
+        updateFloatParameter("cylindersStyleCylinderRadius",0.2);
+        updateFloatParameter("cylindersStyleBallRadius",0.2);
+        updateFloatParameter("surfaceStyleProbeRadius",1.4);
+        updateFloatParameter("ballsStyleRadiusMultiplier",1.);
+        updateIntParameter  ("ribbonStyleAxialSampling",6);
+        updateIntParameter  ("cylindersStyleAngularSampling",6);
+        updateIntParameter  ("dishStyleAngularSampling",32);
+
+
+---
+Fri Sep 13 04:03:17 AM BST 2024
+
+   To move the Preferences Close button to the right-hand side, I added
+               <property name="halign">end</property>
+   to the GtkBox which contained the button
+
+
+----
+Sun  6 Oct 18:04:53 BST 2024
+
+   arch linux by default redirects the core dumps
+   To fix:
+   kernel.core_pattern=core in /etc/sysctl.d/50-coredump.conf

@@ -103,6 +103,18 @@ int show_paths_in_display_manager_state() {
    return graphics_info_t::show_paths_in_display_manager_flag;
 }
 
+/*! \brief set the GUI dark mode state
+ */
+void set_use_dark_mode(short int state) {
+
+   if (state)
+      g_object_set(gtk_settings_get_default(), "gtk-application-prefer-dark-theme", TRUE, NULL);
+   else
+      g_object_set(gtk_settings_get_default(), "gtk-application-prefer-dark-theme", FALSE, NULL);
+
+}
+
+
 
 /*! \brief display the open coordinates dialog */
 void open_coords_dialog() {
@@ -1494,8 +1506,9 @@ coot_no_state_real_exit(int retval) {
 void
 coot_save_state_and_exit(int retval, int save_state_flag) {
 
-   // wait for refinement to finish (c.f conditionally_wait_for_refinement_to_finish())
+   graphics_info_t::static_thread_pool.stop(true);
 
+   // wait for refinement to finish (c.f conditionally_wait_for_refinement_to_finish())
    while (graphics_info_t::restraints_lock) {
       std::this_thread::sleep_for(std::chrono::milliseconds(30));
    }
@@ -1505,9 +1518,11 @@ coot_save_state_and_exit(int retval, int save_state_flag) {
    }
 
    // save the history
-   graphics_info_t g;
-   if (! g.disable_state_script_writing)
-      g.save_history();
+   if (save_state_flag) {
+      graphics_info_t g;
+      if (! g.disable_state_script_writing)
+         g.save_history();
+   }
 
 #ifdef USE_MYSQL_DATABASE
    db_finish_up();
@@ -2021,11 +2036,119 @@ const char *coot_file_chooser_file_name(GtkWidget *widget) {
 /*                  get by accession code:                                  */
 /*  ----------------------------------------------------------------------- */
 
+#include "read-molecule.hh" // move this up
 
 /* Accession code, and dispatch guile command to download and display
    the model.  Hmmm.  */
 void handle_get_accession_code(GtkWidget *frame, GtkWidget *entry) {
 
+   auto join = [] (const std::string &d, const std::string &f) {
+      return d + std::string("/") + f;
+   };
+
+   auto join_2d = [] (const std::string &d1, const std::string &d2, const std::string &f) {
+      return d1 + std::string("/") + d2 + std::string("/") + f;
+   };
+
+   auto network_get_accession_code_entity = [join, join_2d] (const std::string &text, int mode) {
+
+      // 20240630-PE need to check that the file already exists before downloading it
+      xdg_t xdg;
+      std::string download_dir = join(xdg.get_cache_home().string(), "coot-download");
+      std::string dld = coot::get_directory(download_dir);
+      if (! dld.empty()) {
+         download_dir = dld;
+         std::string down_id = coot::util::downcase(text);
+         std::string pdbe_server = "https://www.ebi.ac.uk";
+         std::string pdbe_pdb_file_dir = "pdbe/entry-files/download";
+         std::string pdb_url_dir = pdbe_server + "/" + pdbe_pdb_file_dir;
+
+         std::string pdb_file_name = std::string("pdb") + down_id + std::string(".ent");
+         std::string cif_file_name = std::string("pdb") + down_id + std::string(".cif");
+         std::string pdb_filepath = coot::util::append_dir_file(download_dir, pdb_file_name);
+         std::string cif_filepath = coot::util::append_dir_file(download_dir, cif_file_name);
+
+         std::string pdb_url = join(pdb_url_dir, pdb_file_name);
+         std::string cif_url = join(pdb_url_dir, cif_file_name);
+
+         if (mode == 1) { // mtz mode
+            std::string mtz_file_name = down_id + std::string("_map.mtz");
+            std::string mtz_filepath = coot::util::append_dir_file(download_dir, mtz_file_name);
+            std::string mtz_url = join_2d(pdbe_server, pdbe_pdb_file_dir, mtz_file_name);
+            int status = coot_get_url(mtz_url, mtz_filepath);
+            if (status == 0) {
+               auto_read_make_and_draw_maps(mtz_filepath.c_str());
+            }
+         } else {
+            // blocking!
+            int status = coot_get_url(pdb_url, pdb_file_name);
+            if (status == 0) {
+               read_pdb(pdb_file_name);
+            } else {
+               status = coot_get_url(cif_url, cif_file_name);
+               if (status == 0) {
+                  read_pdb(cif_file_name);
+               }
+            }
+         }
+      }
+   };
+
+   auto fetch_pdb_redo = [join] (const std::string &code) {
+
+      // 20240630-PE need to check that the file already exists before downloading it
+      xdg_t xdg;
+      std::string download_dir = join(xdg.get_cache_home().string(), "coot-download");
+      std::string dld = coot::get_directory(download_dir);
+      if (! dld.empty()) {
+         download_dir = dld;
+         std::string down_id = coot::util::downcase(code);
+         std::string server = "https://pdb-redo.eu";
+         std::string server_dir = std::string("db") + "/" + code;
+         std::string pdb_file_name = code + "_final.pdb";
+         std::string mtz_file_name = code + "_final.mtz";
+         // make a "join()" function
+         std::string pdb_url = server + "/" + server_dir + "/" + pdb_file_name;
+         std::string mtz_url = server + "/" + server_dir + "/" + mtz_file_name;
+         std::string pdb_filepath = coot::util::append_dir_dir(download_dir, pdb_file_name);
+         std::string mtz_filepath = coot::util::append_dir_dir(download_dir, mtz_file_name);
+         int status = coot_get_url(pdb_url, pdb_filepath);
+         if (status == 0) {
+            read_pdb(pdb_filepath);
+            status = coot_get_url(mtz_url, mtz_filepath);
+            if (status == 0) {
+               // why is auto_read_mtz() not a thing? Use a std::string arg
+               auto_read_make_and_draw_maps(mtz_filepath.c_str());
+            }
+         }
+      } else {
+         std::cout << "WARNING:: failed to make directory " << download_dir
+                   << std::endl;
+      }
+
+   };
+
+   auto network_get = [network_get_accession_code_entity, fetch_pdb_redo] (const std::string &text, int n) {
+
+      if (n == COOT_ACCESSION_CODE_WINDOW_OCA) {
+         network_get_accession_code_entity(text, 0); // coords
+      }
+      if (n == COOT_ACCESSION_CODE_WINDOW_EDS) {
+         network_get_accession_code_entity(text, 0); // coords
+         network_get_accession_code_entity(text, 1); // mtz
+      }
+      if (n == COOT_ACCESSION_CODE_WINDOW_OCA_WITH_SF) {
+         std::cout << "WARNING:: OCA+SF no longer supported" << std::endl;
+      }
+      if (n == COOT_ACCESSION_CODE_WINDOW_PDB_REDO) {
+         fetch_pdb_redo(text);
+      }
+      if (n == COOT_UNIPROT_ID) {
+         fetch_alphafold_model_for_uniprot_id(text);
+      }
+   };
+
+   // 20240630-PE no longer used - can be deleted.
    auto python_network_get = [] (const std::string &text, int n) {
 
                                 std::string python_command;
@@ -2080,7 +2203,7 @@ void handle_get_accession_code(GtkWidget *frame, GtkWidget *entry) {
          if (n == COOT_COD_CODE) {
             fetch_cod_entry(text);
          } else {
-            python_network_get(text_c, n);
+            network_get(text_c, n);
          }
       }
    }
@@ -2396,7 +2519,6 @@ void execute_pointer_distances_settings(GtkWidget *widget) {
 
 }
 
-
 void toggle_pointer_distances_show_distances(GtkCheckButton *checkbutton) {
 
    GtkWidget *grid = widget_from_builder("show_pointer_distances_grid");
@@ -2408,263 +2530,8 @@ void toggle_pointer_distances_show_distances(GtkCheckButton *checkbutton) {
       set_show_pointer_distances(0);
       gtk_widget_set_sensitive(grid, FALSE);
    }
-
 }
 
-
-
-
-/*  ------------------------------------------------------------------------ */
-//            model_toolbar things
-/*  ------------------------------------------------------------------------ */
-//
-
-/*! \brief hide the vertical modelling toolbar in the GTK2 version */
-void hide_modelling_toolbar() {
-
-   std::cout << "WARNING:: hide_modelling_toolbar() don't call this function as model_fit_refine dialog no longer exists"
-             << std::endl;
-
-#if 0
-   if (graphics_info_t::use_graphics_interface_flag) {
-      GtkWidget *w = 0;
-      // GtkWidget *handle_box = lookup_widget(graphics_info_t::get_main_window(),
-      // "model_fit_refine_toolbar_handlebox");
-      GtkWidget *handle_box = widget_from_builder("model_fit_refine_toolbar_handlebox");
-
-      if (graphics_info_t::model_toolbar_position_state == coot::model_toolbar::TOP ||
-	  graphics_info_t::model_toolbar_position_state == coot::model_toolbar::BOTTOM) {
-	w = handle_box;
-      } else {
-	// get the frame of the left/right toolbar
-	w = gtk_widget_get_parent(handle_box);
-      }
-      if (!w) {
-	 std::cout << "ERROR:: in hide_modelling_toolbar() failed to lookup toolbar" << std::endl;
-      } else {
-	 graphics_info_t::model_toolbar_show_hide_state = 0;
-	 gtk_widget_set_visible(w, FALSE);
-      }
-   }
-#endif
-}
-
-/*! \brief show the vertical modelling toolbar in the GTK2 version
-  (the toolbar is shown by default) */
-void show_modelling_toolbar() {
-
-   std::cout << "WARNING:: show_modelling_toolbar() don't call this function as model_fit_refine dialog no longer exists"
-             << std::endl;
-
-#if 0
-   if (graphics_info_t::use_graphics_interface_flag) {
-      GtkWidget *w = 0;
-      GtkWidget *handle_box = widget_from_builder("model_fit_refine_toolbar_handlebox");
-
-      if (graphics_info_t::model_toolbar_position_state == coot::model_toolbar::TOP ||
-	  graphics_info_t::model_toolbar_position_state == coot::model_toolbar::BOTTOM) {
-	w = handle_box;
-      } else {
-	w = gtk_widget_get_parent(handle_box);
-      }
-
-      if (!w) {
-	 std::cout << "ERROR:: in show_modelling_toolbar() failed to lookup toolbar" << std::endl;
-      } else {
-	 graphics_info_t::model_toolbar_show_hide_state = 1;
-	 gtk_widget_set_visible(w, TRUE);
-      }
-   }
-#endif
-}
-
-
-void
-show_model_toolbar_all_icons() {
-
-   // GtkWidget *hsep           = lookup_widget(graphics_info_t::get_main_window(), "model_toolbar_hsep_toolitem2");
-   // GtkWidget *vsep           = lookup_widget(graphics_info_t::get_main_window(), "model_toolbar_vsep_toolitem2");
-   // GtkWidget *toolbar_radiobutton = lookup_widget(graphics_info_t::get_main_window(), "model_toolbar_all_icons");
-   GtkWidget *hsep           = widget_from_builder( "model_toolbar_hsep_toolitem2");
-   GtkWidget *vsep           = widget_from_builder("model_toolbar_vsep_toolitem2");
-   GtkWidget *toolbar_radiobutton = widget_from_builder("model_toolbar_all_icons");
-
-   for (unsigned int i=0; i<(*graphics_info_t::model_toolbar_icons).size(); i++) {
-      show_model_toolbar_icon(i);
-   }
-  
-#if (GTK_MAJOR_VERSION >= 4)
-#else
-   gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(toolbar_radiobutton), TRUE);
-#endif
-   if (graphics_info_t::preferences_widget) {
-      // have preferences open and shall update the tree model for icon
-      // GtkWidget *icons_treeview = lookup_widget(graphics_info_t::preferences_widget, "preferences_model_toolbar_icon_tree");
-      GtkWidget *icons_treeview = widget_from_builder("preferences_model_toolbar_icon_tree");
-      GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(icons_treeview));
-      graphics_info_t::update_model_toolbar_icons(model);
-      //icons_treeview = lookup_widget(graphics_info_t::preferences_widget,
-      //                               "preferences_main_toolbar_icon_tree");
-      //model = gtk_tree_view_get_model(GTK_TREE_VIEW(icons_treeview));
-      //graphics_info_t::update_main_toolbar_icons(model);
-   }
-
-   gtk_widget_set_visible(hsep, TRUE);
-   gtk_widget_set_visible(vsep, TRUE);
-}
-
-void
-show_model_toolbar_main_icons() {
-
-   // GtkWidget *hsep           = lookup_widget(graphics_info_t::get_main_window(), "model_toolbar_hsep_toolitem2");
-   // GtkWidget *vsep           = lookup_widget(graphics_info_t::get_main_window(), "model_toolbar_vsep_toolitem2");
-   // GtkWidget *toolbar_radiobutton = lookup_widget(graphics_info_t::get_main_window(), "model_toolbar_main_icons");
-   GtkWidget *hsep           = widget_from_builder("model_toolbar_hsep_toolitem2");
-   GtkWidget *vsep           = widget_from_builder("model_toolbar_vsep_toolitem2");
-   GtkWidget *toolbar_radiobutton = widget_from_builder("model_toolbar_main_icons");
-
-  for (unsigned int i=0; i<(*graphics_info_t::model_toolbar_icons).size(); i++) {
-    if ((*graphics_info_t::model_toolbar_icons)[i].default_show_flag == 1) {
-      show_model_toolbar_icon(i);
-    } else {
-      hide_model_toolbar_icon(i);
-    }
-  }
-
-#if (GTK_MAJOR_VERSION >= 4)
-#else
-  gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(toolbar_radiobutton), TRUE);
-#endif
-  if (graphics_info_t::preferences_widget) {
-    // have preferences open and shall update the tree model for icon
-     // GtkWidget *icons_treeview = lookup_widget(graphics_info_t::preferences_widget, "preferences_model_toolbar_icon_tree");
-    GtkWidget *icons_treeview = widget_from_builder("preferences_model_toolbar_icon_tree");
-    GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(icons_treeview));
-    graphics_info_t::update_model_toolbar_icons(model);
-    //icons_treeview = lookup_widget(graphics_info_t::preferences_widget,
-    //                               "preferences_main_toolbar_icon_tree");
-    //model = gtk_tree_view_get_model(GTK_TREE_VIEW(icons_treeview));
-    //graphics_info_t::update_main_toolbar_icons(model);
-  }
-
-  gtk_widget_set_visible(hsep, FALSE);
-  gtk_widget_set_visible(vsep, FALSE);
-}
-
-void
-update_model_toolbar_icons_menu() {
-
-    update_toolbar_icons_menu(MODEL_TOOLBAR);
-
-}
-
-void
-update_main_toolbar_icons_menu() {
-
-    update_toolbar_icons_menu(MAIN_TOOLBAR);
-
-}
-
-void
-update_toolbar_icons_menu(int toolbar_index) {
-
-   if (! graphics_info_t::use_graphics_interface_flag) return;
-
-   const gchar *user_defined_name;
-   const gchar *main_icons_name;
-   const gchar *all_icons_name;
-   std::vector<coot::preferences_icon_info_t> toolbar_icons;
-
-   if (toolbar_index == MODEL_TOOLBAR) {
-      user_defined_name = "model_toolbar_user_defined1";
-      main_icons_name = "model_toolbar_main_icons";
-      all_icons_name = "model_toolbar_all_icons";
-      toolbar_icons = *graphics_info_t::model_toolbar_icons;
-   } else {
-      user_defined_name = "main_toolbar_user_defined1";
-      main_icons_name = "main_toolbar_main_icons";
-      all_icons_name = "main_toolbar_all_icons";
-      toolbar_icons = *graphics_info_t::main_toolbar_icons;
-   }
-
-   // GtkWidget *user_defined_button = lookup_widget(graphics_info_t::get_main_window(), user_defined_name);
-   // GtkWidget *main_icons_button   = lookup_widget(graphics_info_t::get_main_window(), main_icons_name);
-   // GtkWidget *all_icons_button    = lookup_widget(graphics_info_t::get_main_window(), all_icons_name);
-   GtkWidget *user_defined_button = widget_from_builder(user_defined_name);
-   GtkWidget *main_icons_button   = widget_from_builder(main_icons_name);
-   GtkWidget *all_icons_button    = widget_from_builder(all_icons_name);
-
-   int activate = 1;   // 0 is user defined, 1 all icons, 2 main/default icons
-
-   //g_print("BL DEBUG:: update size %i \n", (toolbar_icons).size());
-   for (unsigned int i=0; i<(toolbar_icons).size(); i++) {
-      //g_print("BL DEBUG:: sho_hide %i, default %i\n", (toolbar_icons)[i].show_hide_flag,(toolbar_icons)[i].default_show_flag);
-      if ((toolbar_icons)[i].show_hide_flag == 0) {
-         if ((toolbar_icons)[i].show_hide_flag == (toolbar_icons)[i].default_show_flag) {
-            activate = 2;
-         } else {
-            activate = 0;
-            break;
-         }
-      }
-   }
-
-   if (activate) {
-      gtk_widget_set_visible(user_defined_button, FALSE);
-      if (activate == 1) {
-#if (GTK_MAJOR_VERSION >= 4)
-#else
-         gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(all_icons_button), TRUE);
-#endif
-      } else {
-#if (GTK_MAJOR_VERSION >= 4)
-#else
-         gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(main_icons_button), TRUE);
-#endif
-      }
-   } else {
-      gtk_widget_set_visible(user_defined_button, TRUE);
-#if (GTK_MAJOR_VERSION >= 4)
-#else
-      gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(user_defined_button), TRUE);
-#endif
-   }
-
-}
-
-// functions for the modelling toolbar style
-void set_model_toolbar_style(int istate) {
-
-   graphics_info_t::model_toolbar_style_state = istate;
-   if (graphics_info_t::use_graphics_interface_flag) {
-      GtkWidget *menuitem;
-      if (istate <= 1) {
-	 // menuitem = lookup_widget(main_window(), "model_toolbar_icons1");
-	 menuitem = widget_from_builder("model_toolbar_icons1");
-#if (GTK_MAJOR_VERSION >= 4)
-#else
-	 gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
-#endif
-      } else if (istate == 2) {
-	 //    menuitem = lookup_widget(main_window(), "model_toolbar_icons_and_text1");
-	 menuitem = widget_from_builder("model_toolbar_icons_and_text1");
-#if (GTK_MAJOR_VERSION >= 4)
-#else
-	 gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
-#endif
-      } else {
-	 menuitem = widget_from_builder("model_toolbar_text1");
-#if (GTK_MAJOR_VERSION >= 4)
-#else
-	 gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
-#endif
-      }
-   }
-}
-
-int model_toolbar_style_state() {
-  return graphics_info_t::model_toolbar_style_state;
-}
 
 /*  ------------------------------------------------------------------------ */
 //            popup-menu for model_toolbar
@@ -2749,171 +2616,6 @@ toolbar_popup_menu (GtkToolbar *toolbar,
 }
 #endif
 
-void
-set_model_toolbar_docked_position_callback(GtkWidget *w, gpointer user_data) {
-
-  int pos = GPOINTER_TO_INT (g_object_get_data(G_OBJECT (w), "position"));
-  set_model_toolbar_docked_position(pos);
-
-}
-
-void
-reattach_modelling_toolbar() {
-
-   // don't know how to fix this. GTK-FIXME
-
-   /*
-  GtkWidget *handlebox = lookup_widget(graphics_info_t::glarea, "model_fit_refine_toolbar_handlebox"); // commented
-  GdkEvent *event = gdk_event_new (GDK_DELETE);
-  event->any.type = GDK_DELETE;
-  event->any.window = GTK_HANDLE_BOX(handlebox)->float_window;
-  event->any.send_event = TRUE;
-  gtk_main_do_event (event);
-  gdk_event_free (event);
-
-  g_object_ref (GTK_HANDLE_BOX(handlebox));
-   */
-}
-
-/*  ------------------------------------------------------------------------ */
-//            reparenting
-/*  ------------------------------------------------------------------------ */
-//
-
-void
-set_model_toolbar_docked_position(int state) {
-
-   /*
-
-  if (graphics_info_t::use_graphics_interface_flag) {
-    GtkWidget *left_frame  = lookup_widget(GTK_WIDGET(graphics_info_t::glarea), // commented
-					   "main_window_model_fit_dialog_frame_left");
-    GtkWidget *right_frame = lookup_widget(GTK_WIDGET(graphics_info_t::glarea),  // commented
-					   "main_window_model_fit_dialog_frame");
-    GtkWidget *handle = lookup_widget(GTK_WIDGET(graphics_info_t::glarea), // commented
-				       "model_fit_refine_toolbar_handlebox");
-    GtkWidget *vbox    = lookup_widget(GTK_WIDGET(graphics_info_t::glarea), // commented
-				       "main_window_vbox");  // was "vbox1"
-    GtkWidget *toolbar = lookup_widget(handle, "model_toolbar"); // commented
-    GtkWidget *vsep    = lookup_widget(handle, "model_toolbar_vsep_toolitem"); // commented
-    GtkWidget *hsep    = lookup_widget(handle, "model_toolbar_hsep_toolitem"); // commented
-    GtkWidget *style   = lookup_widget(handle, "model_toolbar_style_toolitem"); // commented
-
-    // reattach first, in case it wasn't and then change the mode
-
-    if (handle)
-       if (GTK_HANDLE_BOX(handle)->child_detached)
-	  reattach_modelling_toolbar();
-
-    if (toolbar && handle) {
-
-       switch (state) {
-
-       case coot::model_toolbar::RIGHT:
-	  // dock to right frame
-	  gtk_toolbar_set_orientation(GTK_TOOLBAR(toolbar),
-				      GTK_ORIENTATION_VERTICAL);
-	  gtk_handle_box_set_handle_position(GTK_HANDLE_BOX(handle),
-					     GTK_POS_TOP);
-	  // insert snippet before reparenting
-	  g_object_ref(handle);
-	  gtk_container_remove(GTK_CONTAINER(handle->parent), handle);
-	  gtk_container_add(GTK_CONTAINER(right_frame), handle);
-	  g_object_unref(handle);
-	  // end
-	  gtk_widget_reparent(handle, right_frame);
-	  if (graphics_info_t::model_toolbar_show_hide_state) {
-	     gtk_widget_set_visible(right_frame, TRUE);
-	  }
-	  gtk_widget_set_visible(left_frame, FALSE);
-	  graphics_info_t::model_toolbar_position_state = 0;
-	  gtk_widget_set_visible(hsep, TRUE);
-	  gtk_widget_set_visible(style, TRUE);
-	  gtk_widget_set_visible(vsep, FALSE);
-	  break;
-
-       case coot::model_toolbar::LEFT:
-	  // dock to left frame
-	  gtk_toolbar_set_orientation(GTK_TOOLBAR(toolbar),
-				      GTK_ORIENTATION_VERTICAL);
-	  gtk_handle_box_set_handle_position(GTK_HANDLE_BOX(handle),
-					     GTK_POS_TOP);
-	  // insert snippet before reparenting
-	  g_object_ref(handle);
-	  gtk_container_remove(GTK_CONTAINER(handle->parent), handle);
-	  gtk_container_add(GTK_CONTAINER(left_frame), handle);
-	  g_object_unref(handle);
-	  // end
-	  gtk_widget_reparent(handle, left_frame);
-	  if (graphics_info_t::model_toolbar_show_hide_state) {
-	     gtk_widget_set_visible(left_frame, TRUE);
-	  }
-	  gtk_widget_set_visible(right_frame, FALSE);
-	  graphics_info_t::model_toolbar_position_state = 1;
-	  gtk_widget_set_visible(hsep, TRUE);
-	  gtk_widget_set_visible(style, TRUE);
-	  gtk_widget_set_visible(vsep, FALSE);
-	  break;
-
-       case coot::model_toolbar::TOP:
-	  // dock to the top
-	  gtk_toolbar_set_orientation(GTK_TOOLBAR(toolbar),
-				      GTK_ORIENTATION_HORIZONTAL);
-	  gtk_handle_box_set_handle_position(GTK_HANDLE_BOX(handle),
-					     GTK_POS_LEFT);
-	  // insert snippet before reparenting
-	  g_object_ref(handle);
-	  gtk_container_remove(GTK_CONTAINER(handle->parent), handle);
-	  gtk_container_add(GTK_CONTAINER(vbox), handle);
-	  g_object_unref(handle);
-	  // end
-	  gtk_widget_reparent(handle, vbox);
-	  gtk_box_set_child_packing(GTK_BOX(vbox), handle,
-				    FALSE, FALSE, 0, GTK_PACK_START);
-	  gtk_box_reorder_child(GTK_BOX(vbox), handle, 1);
-
-	  gtk_widget_set_visible(left_frame, FALSE);
-	  gtk_widget_set_visible(right_frame, FALSE);
-	  graphics_info_t::model_toolbar_position_state = 2;
-	  gtk_widget_set_visible(hsep, FALSE);
-	  gtk_widget_set_visible(style, FALSE);
-	  gtk_widget_set_visible(vsep, TRUE);
-	  break;
-
-       case coot::model_toolbar::BOTTOM:
-	  // dock to the bottom
-	  gtk_toolbar_set_orientation(GTK_TOOLBAR(toolbar),
-				      GTK_ORIENTATION_HORIZONTAL);
-	  gtk_handle_box_set_handle_position(GTK_HANDLE_BOX(handle),
-					     GTK_POS_LEFT);
-	  // insert snippet before reparenting
-	  g_object_ref(handle);
-	  gtk_container_remove(GTK_CONTAINER(handle->parent), handle);
-	  gtk_container_add(GTK_CONTAINER(vbox), handle);
-	  g_object_unref(handle);
-	  // end
-	  gtk_widget_reparent(handle, vbox);
-	  gtk_box_set_child_packing(GTK_BOX(vbox), handle,
-				    FALSE, FALSE, 0, GTK_PACK_START);
-	  gtk_box_reorder_child(GTK_BOX(vbox), handle, 4);
-	  gtk_widget_set_visible(left_frame, FALSE);
-	  gtk_widget_set_visible(right_frame, FALSE);
-	  graphics_info_t::model_toolbar_position_state = 3;
-	  gtk_widget_set_visible(hsep, FALSE);
-	  gtk_widget_set_visible(style, FALSE);
-	  gtk_widget_set_visible(vsep, TRUE);
-	  break;
-
-       default:
-	  std::cout <<"INFO:: invalid position "<< state <<std::endl;
-	  break;
-
-	  }
-       }
-    }
-
-   */
-}
 
 int suck_model_fit_dialog_bl() {
 
@@ -3010,7 +2712,7 @@ void hide_main_toolbar() {
       // GtkWidget *w = lookup_widget(graphics_info_t::get_main_window(), "main_toolbar");
       GtkWidget *w = widget_from_builder("main_toolbar");
       if (!w) {
-	 std::cout << "failed to lookup main toolbar" << std::endl;
+	 std::cout << "hide_main_toolbar(): failed to lookup main toolbar" << std::endl;
       } else {
 	 graphics_info_t::main_toolbar_show_hide_state = 0;
 	 gtk_widget_set_visible(w, FALSE);
@@ -3021,11 +2723,13 @@ void hide_main_toolbar() {
 /*! \brief show the horizontal maub toolbar in the GTK2 version
   (the toolbar is shown by default) */
 void show_main_toolbar() {
+
+   // main_toolbar no longer exists - do I still want this function?
    if (graphics_info_t::use_graphics_interface_flag) {
       GtkWidget *w = widget_from_builder("main_toolbar");
 
       if (!w) {
-	 std::cout << "failed to lookup main toolbar" << std::endl;
+	 std::cout << "show_main_toolbar(): failed to lookup main toolbar" << std::endl;
       } else {
 	 graphics_info_t::main_toolbar_show_hide_state = 1;
 	 gtk_widget_set_visible(w, TRUE);
@@ -3037,20 +2741,14 @@ void show_main_toolbar() {
 // should be generic!? FIXME BL
 void set_main_toolbar_style(int istate) {
 
+   // main_toolbar no longer exists - do I still want this function?
+
    graphics_info_t::main_toolbar_style_state = istate;
    if (graphics_info_t::use_graphics_interface_flag) {
       GtkWidget *toolbar = widget_from_builder("main_toolbar");
-      // may have to keep text somewhere?!?! FIXME
-#if (GTK_MAJOR_VERSION >= 4)
-#else
-      if (istate <= 1) {
-          gtk_toolbar_set_style(GTK_TOOLBAR (toolbar), GTK_TOOLBAR_ICONS);
-      } else if (istate == 2) {
-          gtk_toolbar_set_style(GTK_TOOLBAR (toolbar), GTK_TOOLBAR_BOTH_HORIZ);
-      } else {
-         std::cout << "ERROR:: no toolbar in set_main_toolbar_style()" << std::endl;
+      if (!toolbar) {
+	 std::cout << "set_main_toolbar_style(): failed to lookup main toolbar" << std::endl;
       }
-#endif
    }
 }
 
@@ -4046,11 +3744,14 @@ GtkWidget *wrapped_create_bond_parameters_dialog() {
 
 void apply_bond_parameters(GtkWidget *w) {
 
-   // 20211018-PE  Old, no longer used. Delete?
-
    graphics_info_t g;
-   int imol = g.bond_parameters_molecule;
 
+   int imol = -1; // 20240713-PE was g.bond_parameters_molecule;
+
+   GtkWidget *bond_parameters_molecule_comboboxtext = widget_from_builder("bond_parameters_molecule_comboboxtext");
+   if (bond_parameters_molecule_comboboxtext) {
+      imol = g.combobox_get_imol(GTK_COMBO_BOX(bond_parameters_molecule_comboboxtext));
+   }
 
    if (imol >= 0) {
       if (imol < g.n_molecules()) {

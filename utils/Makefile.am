@@ -33,12 +33,12 @@ lib_LTLIBRARIES=libcoot-utils.la
 
 pkginclude_HEADERS = coot-utils.hh coot-fasta.hh dodec.hh win-compat.hh ctpl_stl.h ctpl.h \
 	pir-alignment.hh align-utils.hh split-indices.hh radix.hh logging.hh insertion-sort.hh \
-	backward.hpp colour-holder.hh setup-syminfo.hh
+	backward.hpp colour-holder.hh setup-syminfo.hh subprocess.hpp base64-encode-decode.hh xdg-base.hh
 
 pkgincludedir = $(includedir)/coot/utils
 
 libcoot_utils_la_SOURCES = coot-utils.cc coot-fasta.cc atomic-numbers.cc setup-syminfo.cc \
-	gdk-keysyms.cc hsv-rgb.cc dodec.cc win-compat.cc threads.cc align-utils.cc \
+	gdk-keysyms.cc hsv-rgb.cc dodec.cc win-compat.cc threads.cc align-utils.cc base64-encode-decode.cc \
 	pir-alignment.cc split-indices.cc radix.cc logging.cc insertion-sort.cc colour-holder.cc
 
 libcoot_utils_la_LIBADD = \
@@ -58,7 +58,7 @@ endif
 
 libcoot_utils_la_LDFLAGS = $(SHARED_LDFLAGS)
 
-check_PROGRAMS = test-logging test-utils
+check_PROGRAMS = test-logging test-utils test-subprocess
 
 test_logging_SOURCES = test-logging.cc
 
@@ -67,3 +67,6 @@ test_logging_LDADD = libcoot-utils.la
 test_utils_SOURCES = test-utils.cc
 
 test_utils_LDADD = libcoot-utils.la
+
+test_subprocess_SOURCES = test-subprocess.cc
+

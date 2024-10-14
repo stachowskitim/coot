@@ -65,8 +65,6 @@
 #include "ligand/helix-placement.hh"
 #include "ligand/fast-ss-search.hh"
 
-#include "trackball.h" // adding exportable rotate interface
-
 #include "utils/coot-utils.hh"  // for is_member_p
 #include "coot-utils/coot-map-heavy.hh"  // for fffear
 
@@ -1361,7 +1359,7 @@ change_chain_id_by_widget(GtkWidget *w) {
    int from_resno = -9999;
    int to_resno   = -9999;
 
-   if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(residue_range_yes_radiobutton))) {
+   if (gtk_check_button_get_active(GTK_CHECK_BUTTON(residue_range_yes_radiobutton))) {
       use_res_range_flag = true;
       std::pair<short int, int> p1 = int_from_entry(residue_range_from_entry);
       std::pair<short int, int> p2 = int_from_entry(residue_range_to_entry);
@@ -1685,40 +1683,15 @@ void  do_edit_copy_fragment() {
 
 }
 
-void  do_edit_replace_residue() {
 
-#ifdef USE_PYTHON
-#ifdef USE_GUILE
-   short int state_lang = coot::STATE_SCM;
-#else
-   short int state_lang = coot::STATE_PYTHON;
-#endif
-#else // python not used
-#ifdef USE_GUILE
-   short int state_lang = coot::STATE_SCM;
-#else
-   short int state_lang = 0;
-#endif
-#endif
+// 20240930-PE remove the usage of scripting from this function
+// Make it an overlay
+void do_edit_replace_fragment() {
 
-#ifdef USE_GUILE
-   std::string cmd = "(generic-single-entry \"Replace this residue with residue of type:\" \"ALA\" \"Mutate\" (lambda (text) (using-active-atom (mutate-by-overlap aa-imol aa-chain-id aa-res-no text))))";
-   if (state_lang == coot::STATE_SCM) {
-      safe_scheme_command(cmd);
-   }
-#else
-#ifdef USE_PYTHON
-   if (state_lang == coot::STATE_PYTHON) {
-
-      std::string cmd = "import coot_gui\ncoot_gui.generic_single_entry(\"Replace this residue with residue of type:\", \"ALA\", \"Mutate\", lambda text: coot_utils.using_active_atom(coot_utils.mutate_by_overlap, \"aa_imol\", \"aa_chain_id\", \"aa_res_no\", text))";
-      safe_python_command(cmd);
-   }
-#endif // PYTHON
-#endif // GUILE
-
-}
-
-void  do_edit_replace_fragment() {
+   // Molecule Working     [molecule chooser] # needs updating
+   // Molecule Reference   [molecule chooser] # contains the fragment to be copied
+   // Atom Selection       [________________]
+   //                        Cancel   Replace
 
 
 #ifdef USE_PYTHON

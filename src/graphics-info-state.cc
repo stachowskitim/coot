@@ -32,6 +32,7 @@
 #include <algorithm>
 
 #include <gtk/gtk.h>
+#include "utils/xdg-base.hh"
 #include "interface.h"
 #include "globjects.h" // for GRAPHICS_WINDOW_X_START_SIZE and Y
 #include "graphics-info.h"
@@ -219,8 +220,8 @@ graphics_info_t::save_state_file(const std::string &filename, short int il) {
    // cif dictionary
    if (cif_dictionary_filename_vec->size() > 0) {
       for (unsigned int i=0; i<cif_dictionary_filename_vec->size(); i++) {
-         commands.push_back(state_command("coot", "read-cif-dictionary",
-                                          single_quote((*cif_dictionary_filename_vec)[i]), il));
+         auto fn = (*cif_dictionary_filename_vec)[i];
+         commands.push_back(state_command("coot", "read-cif-dictionary", fn, il));
       }
    }
 
@@ -235,6 +236,11 @@ graphics_info_t::save_state_file(const std::string &filename, short int il) {
    //
    if (rotamer_search_mode == ROTAMERSEARCHLOWRES)
       commands.push_back(state_command("coot", "set-rotamer-search-mode", ROTAMERSEARCHLOWRES, il));
+
+   // Lighting
+   if (displayed_image_type == graphics_info_t::SHOW_AO_SCENE) // else SHOW_BASIC_SCENE
+      commands.push_back(state_command("coot", "set-use-fancy-lighting", 1, il));
+
 
    std::vector <std::string> command_strings;
 
@@ -392,81 +398,48 @@ graphics_info_t::save_state_file(const std::string &filename, short int il) {
 
                if (molecules[i].Bonds_box_type() != coot::NORMAL_BONDS) {
                   if (molecules[i].Bonds_box_type() == coot::CA_BONDS) {
-                     active_strings.clear();
-                     display_strings.push_back("coot");
-                     active_strings.push_back("graphics-to-ca-representation");
-                     active_strings.push_back(int_to_string(molecule_count));
-                     commands.push_back(state_command(active_strings, il));
+                     std::string sc = state_command("coot", "graphics-to-ca-representation", molecule_count, il);
+                     commands.push_back(sc);
                   }
                   if (molecules[i].Bonds_box_type() == coot::COLOUR_BY_CHAIN_BONDS) {
-                     active_strings.clear();
-                     display_strings.push_back("coot");
-                     active_strings.push_back("set-colour-by-chain");
-                     active_strings.push_back(int_to_string(molecule_count));
-                     commands.push_back(state_command(active_strings, il));
+                     std::string sc = state_command("coot", "set-colour-by-chain", molecule_count, il);
+                     commands.push_back(sc);
                   }
                   if (molecules[i].Bonds_box_type() == coot::CA_BONDS_PLUS_LIGANDS) {
-                     active_strings.clear();
-                     display_strings.push_back("coot");
-                     active_strings.push_back("graphics-to-ca-plus-ligands-representation");
-                     active_strings.push_back(int_to_string(molecule_count));
-                     commands.push_back(state_command(active_strings, il));
+                     std::string sc = state_command("coot", "graphics-to-ca-plus-ligands-representation", molecule_count, il);
+                     commands.push_back(sc);
                   }
                   if (molecules[i].Bonds_box_type() == coot::CA_BONDS_PLUS_LIGANDS_AND_SIDECHAINS) {
-                     active_strings.clear();
-                     display_strings.push_back("coot");
-                     active_strings.push_back("graphics-to-ca-plus-ligands-and-sidechains-representation");
-                     active_strings.push_back(int_to_string(molecule_count));
-                     commands.push_back(state_command(active_strings, il));
+                     std::string sc = state_command("coot", "graphics-to-ca-plus-ligands-and-sidechains-representation", molecule_count, il);
+                     commands.push_back(sc);
                   }
                   if (molecules[i].Bonds_box_type() == coot::BONDS_NO_WATERS) {
-                     active_strings.clear();
-                     display_strings.push_back("coot");
-                     active_strings.push_back("graphics-to-bonds-no-waters-representation");
-                     active_strings.push_back(int_to_string(molecule_count));
-                     commands.push_back(state_command(active_strings, il));
+                     std::string sc = state_command("coot", "graphics-to-bonds-no-waters-representation", molecule_count, il);
+                     commands.push_back(sc);
                   }
                   if (molecules[i].Bonds_box_type() == coot::BONDS_SEC_STRUCT_COLOUR) {
-                     active_strings.clear();
-                     display_strings.push_back("coot");
-                     active_strings.push_back("graphics-to-sec-struct-bonds-representation");
-                     active_strings.push_back(int_to_string(molecule_count));
-                     commands.push_back(state_command(active_strings, il));
+                     std::string sc = state_command("coot", "graphics-to-sec-struct-bonds-representation", molecule_count, il);
+                     commands.push_back(sc);
                   }
                   if (molecules[i].Bonds_box_type() == coot::CA_BONDS_PLUS_LIGANDS_SEC_STRUCT_COLOUR) {
-                     active_strings.clear();
-                     display_strings.push_back("coot");
-                     active_strings.push_back("graphics-to-ca-plus-ligands-sec-struct-representation");
-                     active_strings.push_back(int_to_string(molecule_count));
-                     commands.push_back(state_command(active_strings, il));
+                     std::string sc = state_command("coot", "graphics-to-ca-plus-ligands-sec-struct-representation", molecule_count, il);
+                     commands.push_back(sc);
                   }
                   if (molecules[i].Bonds_box_type() == coot::COLOUR_BY_MOLECULE_BONDS) {
-                     active_strings.clear();
-                     display_strings.push_back("coot");
-                     active_strings.push_back("set-colour-by-molecule");
-                     active_strings.push_back(int_to_string(molecule_count));
-                     commands.push_back(state_command(active_strings, il));
+                     std::string sc = state_command("coot", "set-colour-by-molecule", molecule_count, il);
+                     commands.push_back(sc);
                   }
                   if (molecules[i].Bonds_box_type() == coot::COLOUR_BY_RAINBOW_BONDS) {
-                     active_strings.clear();
-                     display_strings.push_back("coot");
-                     active_strings.push_back("graphics-to-rainbow-representation");
-                     active_strings.push_back(int_to_string(molecule_count));
-                     commands.push_back(state_command(active_strings, il));
+                     std::string sc = state_command("coot", "graphics-to-rainbow-representation", molecule_count, il);
+                     commands.push_back(sc);
                   }
                   if (molecules[i].Bonds_box_type() == coot::COLOUR_BY_B_FACTOR_BONDS) {
-                     active_strings.clear();
-                     display_strings.push_back("coot");
-                     active_strings.push_back("graphics-to-b-factor-representation");
-                     active_strings.push_back(int_to_string(molecule_count));
-                     commands.push_back(state_command(active_strings, il));
+                     std::string sc = state_command("coot", "graphics-to-b-factor-representation", molecule_count, il);
+                     commands.push_back(sc);
                   }
                   if (molecules[i].Bonds_box_type() == coot::COLOUR_BY_OCCUPANCY_BONDS) {
-                     active_strings.clear();
-                     display_strings.push_back("coot");
-                     active_strings.push_back("graphics-to-occupancy-representation");
-                     active_strings.push_back(int_to_string(molecule_count));
-                     commands.push_back(state_command(active_strings, il));
+                     std::string sc = state_command("coot", "graphics-to-occupancy-representation", molecule_count, il);
+                     commands.push_back(sc);
                   }
                }
 
@@ -476,7 +449,7 @@ graphics_info_t::save_state_file(const std::string &filename, short int il) {
                   // First the "all" status for the additional representation of this molecule.
                   // Ooops. This is not (yet) a separate state.  Currently, pressing the button
                   // simply turns on (or off) all representations.  The display manager does not
-                  // save the state of this button (if it is off, closed and then openned then the
+                  // save the state of this button (if it is off, closed and then opened then the
                   // "all" button is not shown!)
 
                   //                   active_strings.clear();
@@ -842,35 +815,21 @@ graphics_info_t::save_state() {
 
    int r = 0;
 
-   // 20140410:
-   //
-   // This is a mess (but better than it was yesterday).  This needs a
-   // re-think about when the state file is written (and when
-   // run_state_file_status is set/unset).
+   xdg_t xdg;
+   std::filesystem::path path;
 
-   //    std::cout << "in save_state() run_state_file_status was " << run_state_file_status
-   // << std::endl;
-
-   if (run_state_file_status) {
-      short int il = coot::SCHEME_SCRIPT;
+   short int il = coot::SCHEME_SCRIPT;
 #ifdef USE_GUILE
-      if (1) { // was state_file_was_run_flag
-	 r = save_state_file(save_state_file_name, il);
-      } else {
-	 // std::cout << "state_file_was_run_flag was false" << std::endl;
-      }
+   path = xdg.get_state_home().append(save_state_file_name);
+
+   r = save_state_file(path.string(), il);
 #endif // USE_GUILE
 
-#ifdef USE_PYTHON
-      il = coot::PYTHON_SCRIPT;
-      // BL says:: grrr. This was a baddy using state_file_was_run_flag
-      // here. No idea what writing a state file has to do with running one.
-      if (1)
-	 r = save_state_file("0-coot.state.py", il);
-#endif // USE_PYTHON
-      return r;
-   }
-   return 0;
+   il = coot::PYTHON_SCRIPT;
+   // get_state_home() creates the directory if needed
+   path = xdg.get_state_home().append("0-coot.state.py");
+   r = save_state_file(path.string(), il);
+   return r;
 }
 
 std::string
@@ -1017,7 +976,10 @@ graphics_info_t::state_command(const std::string &module, const std::string &fun
    std::string command;
 
    if (state_lang == coot::STATE_SCM) {
-      std::cout << "WARNING/ERROR:: missing new style state_command for scheme " << func_name << std::endl;
+
+      // 20240610-PE remove this for now
+      if (false)
+         std::cout << "WARNING/ERROR:: missing new style state_command for scheme " << func_name << std::endl;
    }
 
    if (state_lang == coot::STATE_PYTHON) {
@@ -1046,7 +1008,7 @@ graphics_info_t::state_command(const std::string &module, const std::string &fun
 //
 short int
 graphics_info_t::write_state(const std::vector<std::string> &commands,
-			     const std::string &filename) const {
+			                    const std::string &filename) const {
 
    bool do_c_mode = false; // it's 2020 - Mac problems have gone away?
 
@@ -1067,7 +1029,7 @@ graphics_info_t::write_state(const std::vector<std::string> &commands,
 //
 short int
 graphics_info_t::write_state_fstream_mode(const std::vector<std::string> &commands,
-					  const std::string &filename) const {
+					                           const std::string &filename) const {
 
    short int istat = 1;
 
@@ -1076,7 +1038,7 @@ graphics_info_t::write_state_fstream_mode(const std::vector<std::string> &comman
 
    if (f) {
       for (unsigned int i=0; i<commands.size(); i++) {
-	 f << commands[i] << "\n";
+	      f << commands[i] << "\n";
          // std::cout << "write_state_fstream_mode() " << commands[i] << std::endl;
       }
       f.flush();  // fixes valgrind problem?
@@ -1099,7 +1061,7 @@ graphics_info_t::write_state_fstream_mode(const std::vector<std::string> &comman
 
    } else {
       std::cout << "WARNING: couldn't write to state file " << filename
-		<< std::endl;
+		          << std::endl;
       istat = 0;
    }
    return istat;
@@ -1191,6 +1153,7 @@ graphics_info_t::add_history_command(const std::vector<std::string> &command_str
 int
 graphics_info_t::save_history() const {
 
+   xdg_t xdg;
    int istate = 0;
    std::string history_file_name("0-coot-history");
    std::vector<std::vector<std::string> > raw_command_strings = history_list.history_list();
@@ -1198,15 +1161,17 @@ graphics_info_t::save_history() const {
    if (python_history) {
       for (unsigned int i=0; i<raw_command_strings.size(); i++)
 	 languaged_commands.push_back(pythonize_command_strings(raw_command_strings[i]));
-      std::string file = history_file_name + ".py";
-      istate =  write_state(languaged_commands, file);
+      std::string file_name = history_file_name + ".py";
+      std::string history_file_path = xdg.get_state_home().append(file_name).string();
+      istate =  write_state(languaged_commands, history_file_path);
    }
    if (guile_history) {
       languaged_commands.resize(0);
       for (unsigned int i=0; i<raw_command_strings.size(); i++)
 	 languaged_commands.push_back(schemize_command_strings(raw_command_strings[i]));
-      std::string file = history_file_name + ".scm";
-      istate =  write_state(languaged_commands, file);
+      std::string file_name = history_file_name + ".scm";
+      std::string history_file_path = xdg.get_state_home().append(file_name).string();
+      istate =  write_state(languaged_commands, history_file_path);
    }
    return istate;
 }

@@ -254,9 +254,6 @@ void export_map_gui(short int export_map_fragment);
 function added for Lothar Esser */
 void set_main_window_title(const char *s);
 
-/*! function to show or hide the vertical modelling toolbar */
-void set_show_modelling_toolbar(short int state);
-
 /* \} */
 
 /*  -------------------------------------------------------------------- */
@@ -602,6 +599,10 @@ int do_GL_lighting_state();
 */
 short int use_graphics_interface_state();
 
+/*! \brief set the GUI dark mode state
+ */
+void set_use_dark_mode(short int state);
+
 /*! \brief is the python interpreter at the prompt?
 
 @return 1 for yes, 0 for no.*/
@@ -913,29 +914,11 @@ void set_show_origin_marker(int istate);
 /*! \brief return the origin marker shown? state */
 int  show_origin_marker_state();
 
-/*! \brief hide the vertical modelling toolbar in the GTK2 version */
-void hide_modelling_toolbar();
-/*! \brief show the vertical modelling toolbar in the GTK2 version
-  (the toolbar is shown by default) */
-void show_modelling_toolbar();
-
 /*! \brief hide the horizontal main toolbar in the GTK2 version */
 void hide_main_toolbar();
 /*! \brief show the horizontal main toolbar in the GTK2 version
   (the toolbar is shown by default) */
 void show_main_toolbar();
-
-/*! \brief show all available icons in the modelling toolbar (same as MFR dialog) */
-void show_model_toolbar_all_icons();
-/*! \brief show only a selection of icons in the modelling toolbar */
-void show_model_toolbar_main_icons();
-
-/*! \brief reattach the modelling toolbar to the last attached position */
-void reattach_modelling_toolbar();
-
-/*! \brief to swap sides of the Model/Fit/Refine toolbar
-  0 (default) is right, 1 is left, 2 is top, 3 is bottom */
-void set_model_toolbar_docked_position(int state);
 
 /*! \brief reparent the Model/Fit/Refine dialog so that it becomes
   part of the main window, next to the GL graphics context */
@@ -958,9 +941,6 @@ void set_accept_reject_dialog_docked_show(int state);
 /*! \brief what is the accept/reject dialog docked show state? */
 int accept_reject_dialog_docked_show_state();
 
-/* functions for the refinement toolbar style */
-void set_model_toolbar_style(int state);
-int model_toolbar_style_state();
 
 /* functions for the main toolbar style */
 void set_main_toolbar_style(int state);
@@ -1325,6 +1305,14 @@ int transform_map_raw(int imol,
   on the grid of imap1.  Return the new molecule number.
   Return -1 on failure. */
 int difference_map(int imol1, int imol2, float map_scale);
+
+/*! \brief by default, maps that are P1 and have 90 degree angles
+           are considered as maps without symmetry (i.e. EM maps).
+           In some cases though P1 maps do/should have symmetry -
+           and this is the means by you can tell Coot that.
+    @param state 1 turns on map symmetry
+*/
+void set_map_has_symmetry(int imol, int state);
 
 /*! \brief make a new map (a copy of map_no) that is in the cell,
   spacegroup and gridding of the map in reference_map_no.
@@ -2283,7 +2271,7 @@ void set_colour_map_rotation_for_map(float f); /* "global"/default */
 /*! \brief set the colour map rotation for molecule number imol
 
 theta is in degrees */
-void  set_molecule_bonds_colour_map_rotation(int imol, float theta);
+void set_molecule_bonds_colour_map_rotation(int imol, float theta);
 
 /*! \brief Get the colour map rotation for molecule number imol */
 float get_molecule_bonds_colour_map_rotation(int imol);
@@ -2538,6 +2526,20 @@ void set_draw_axes(int i);
 /* section Atom Selection Utilities */
 /*! \name  Atom Selection Utilities */
 /* \{ */
+
+#ifdef __cplusplus /* protection from use in callbacks.c, else compilation probs */
+#ifdef USE_PYTHON
+/* Get model molecule list */
+PyObject *get_model_molecule_list_py();
+#endif
+#endif
+
+#ifdef __cplusplus
+#ifdef USE_GUILE
+/* Get model molecule list */
+SCM get_model_molecule_list_scm();
+#endif
+#endif
 
 /* does not account for alternative conformations properly */
 /* return -1 if atom not found. */
@@ -3357,6 +3359,10 @@ void set_refinement_immediate_replacement(int istate);
 /*! \brief query the state of the immediate replacement mode */
 int  refinement_immediate_replacement_state();
 
+void set_refine_use_noughties_physics(short int state);
+
+int get_refine_use_noughties_physics_state();
+
 /*! \brief set the number of frames for which the selected residue
   range flashes
 
@@ -3895,7 +3901,6 @@ void clear_last_measure_distance();
 
 void  do_edit_copy_molecule();
 void  do_edit_copy_fragment();
-void  do_edit_replace_residue();
 void  do_edit_replace_fragment();
 
 /* \} */

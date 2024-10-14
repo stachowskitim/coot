@@ -1006,6 +1006,25 @@ void set_default_initial_contour_level_for_difference_map(float n_sigma) {
 }
 
 
+/*! \brief by default, maps that are P1 and have 90 degree angles
+           are considered as maps without symmetry (i.e. EM maps).
+           In some cases though P1 maps do/should have symmetry -
+           and this is the means by you can tell Coot that.
+    @param state 1 turns on map symmetry
+*/
+void set_map_has_symmetry(int imol, int state) {
+
+   if (is_valid_map_molecule(imol)) {
+      bool is_em_map = true;
+      if (state) is_em_map = false;
+      // graphics_info_t::molecules[imol].is_em_map_cached_flag = is_em_map;
+      graphics_info_t::molecules[imol].set_map_has_symmetry(is_em_map);
+   }
+
+}
+
+
+
 
 
 void set_map_line_width(int w) {
@@ -1130,8 +1149,6 @@ int another_level_from_map_molecule_number(int imap) {
    return istat;
 }
 
-
-
 void set_map_radius_slider_max(float f) {
    graphics_info_t::map_radius_slider_max = f;
    std::string cmd = "set-map-radius-slider-max";
@@ -1139,6 +1156,7 @@ void set_map_radius_slider_max(float f) {
    args.push_back(f);
    add_to_history_typed(cmd, args);
 }
+
 void set_contour_level_absolute(int imol_map, float level) {
 
    if (is_valid_map_molecule(imol_map)) {
@@ -3281,3 +3299,31 @@ int analyse_map_point_density_change_py(PyObject *map_number_list_py, int imol_m
    }
 }
 #endif
+
+//! the map should be displayed and not a difference map
+void use_vertex_gradients_for_map_normals_for_latest_map() {
+
+   std::cout << "----------- use_vertex_gradients_for_map_normals_for_latest_map() ------ " << std::endl;
+
+   int imol_map = -1;
+   int n_mol = graphics_info_t::n_molecules();
+
+   for (int i=(n_mol-1); i>=0; i--) {
+      if (is_valid_map_molecule(i)) {
+         if (graphics_info_t::molecules[i].is_displayed_p()) {
+            if (graphics_info_t::molecules[i].is_difference_map_p())
+               continue;
+            imol_map = i;
+            break;
+         }
+      }
+   }
+
+   if (imol_map != -1) {
+      bool state = true;
+      std::cout << "debug:: calling set_use_vertex_gradients_for_map_normals() for imol " << imol_map << std::endl;
+      graphics_info_t::molecules[imol_map].set_use_vertex_gradients_for_map_normals(state);
+      graphics_draw();
+   }
+
+}

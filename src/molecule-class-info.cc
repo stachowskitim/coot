@@ -198,6 +198,8 @@ molecule_class_info_t::setup_internal() { // init
    pending_contour_level_change_count = 0;
    data_resolution_ = -1; // unset
 
+   use_vertex_gradients_for_map_normals_flag = false;
+
    // fourier (for phase recombination (potentially) in refmac:
    fourier_weight_label = ""; // unset initially.
 
@@ -449,8 +451,12 @@ molecule_class_info_t::handle_read_draw_molecule(int imol_no_in,
    if (atom_sel.read_success == 1) {
 
       // update the geometry as needed
-      geom_p->read_extra_dictionaries_for_molecule(atom_sel.mol, imol_no,
-                                                   &graphics_info_t::cif_dictionary_read_number);
+      if (geom_p) {
+         geom_p->read_extra_dictionaries_for_molecule(atom_sel.mol, imol_no,
+                                                      &graphics_info_t::cif_dictionary_read_number);
+      } else {
+         std::cout << "ERROR:: mci::handle_read_draw_molecule(): geom_p is null" << std::endl;
+      }
 
       // LINK info:
       int n_models = atom_sel.mol->GetNumberOfModels();
@@ -3908,7 +3914,7 @@ molecule_class_info_t::make_bonds_type_checked(const char *caller) {
    if (bonds_box_type == coot::COLOUR_BY_USER_DEFINED_COLOURS_CA_BONDS)
       user_defined_colours_representation(g.Geom_p(), false, g.draw_missing_loops_flag); // hack,
 
-   bonds_box.debug();
+   if (debug) bonds_box.debug();
 
    // bleugh. But if we don't do this here, where *do* we do it?
    // Should the glci be passed to make_bonds_type_checked()?  Urgh.
@@ -3975,7 +3981,7 @@ molecule_class_info_t::make_colour_table() const {
    for (int icol=0; icol<bonds_box.num_colours; icol++) {
       if (bonds_box_type == coot::COLOUR_BY_RAINBOW_BONDS) {
          glm::vec4 col = get_bond_colour_by_colour_wheel_position(icol, coot::COLOUR_BY_RAINBOW_BONDS);
-         std::cout << "rainbow " << icol << glm::to_string(col) << std::endl;
+         // std::cout << "rainbow " << icol << " " << glm::to_string(col) << std::endl;
          colour_table[icol] = col;
       } else {
          // this is the old way of doing user-defined colours. Now we use
@@ -4605,8 +4611,8 @@ void
 molecule_class_info_t::make_bonds_type_checked(const std::set<int> &no_bonds_to_these_atom_indices,
                                                const char *caller) {
 
-   std::cout << "debug:: ---- in make_bonds_type_checked() --- start ---" << std::endl;
-
+   if (false)
+      std::cout << "debug:: ---- in make_bonds_type_checked() --- start ---" << std::endl;
 
    if (false) {
       std::string caller_s = "NULL";
@@ -4859,9 +4865,10 @@ molecule_class_info_t::update_extra_restraints_representation_bonds() {
 
    // make things redraw fast - this is a hack for morph-and-refine.
 
-   std::cout << "here with extra_restraints_representation.bond_restraints size "
-             << extra_restraints.bond_restraints.size() << " " << draw_it_for_extra_restraints
-             << std::endl;
+   if (false)
+      std::cout << "here with extra_restraints_representation.bond_restraints size "
+                << extra_restraints.bond_restraints.size() << " " << draw_it_for_extra_restraints
+                << std::endl;
 
    // I want  to update them even if they are not drawn, I think.
    // if (! draw_it_for_extra_restraints || ! draw_it)
@@ -7499,9 +7506,11 @@ molecule_class_info_t::add_typed_pointer_atom(coot::Cartesian pos, const std::st
             ok_to_add = false;
 
          if (! ok_to_add) {
-            std::cout << "WARNING:: new atom addition blocked by nearby atom" << std::endl;
             graphics_info_t g;
-            g.add_status_bar_text("WARNING:: new atom addition blocked by nearby atom");
+            std::string s = "WARNING:: new atom addition blocked by nearby atom";
+            std::cout << s << std::endl;
+            g.add_status_bar_text(s);
+            message = s;
          } else {
 
             if (w) {
@@ -7519,25 +7528,31 @@ molecule_class_info_t::add_typed_pointer_atom(coot::Cartesian pos, const std::st
                res_p->seqNum = wresno;
                res_p->AddAtom(atom_p);
                w->AddResidue(res_p);
-               std::cout << atom_p << " added to molecule" << std::endl;
+               std::cout << "DEBUG:: " << atom_p << " added to molecule" << std::endl;
                atom_sel.mol->PDBCleanup(mmdb::PDBCLEAN_SERIAL|mmdb::PDBCLEAN_INDEX);
                atom_sel.mol->FinishStructEdit();
+               coot::util::pdbcleanup_serial_residue_numbers(atom_sel.mol);
                atom_sel = make_asc(atom_sel.mol);
                have_unsaved_changes_flag = 1;
                make_bonds_type_checked(__FUNCTION__);
+               status = true;
 
             } else {
                // There was no water chain
                res_p->AddAtom(atom_p);
-               std::cout << atom_p << " added to molecule (and new chain)" << std::endl;
+               std::cout << "DEBUG:: " << atom_p << " in new chain added to molecule (and new chain)" << std::endl;
                if (!pre_existing_chain_flag) {
                   chain_p->SetChainID(mol_chain_id.second.c_str());
-                  atom_sel.mol->GetModel(1)->AddChain(chain_p);
+                  mmdb::Model *model_p = atom_sel.mol->GetModel(1);
+                  if (model_p)
+                     model_p->AddChain(chain_p);
                }
                res_p->seqNum = 1; // start of a new chain.
                chain_p->AddResidue(res_p);
                atom_sel.mol->PDBCleanup(mmdb::PDBCLEAN_SERIAL|mmdb::PDBCLEAN_INDEX);
                atom_sel.mol->FinishStructEdit();
+               // removed replacement of the atom_sel
+               coot::util::pdbcleanup_serial_residue_numbers(atom_sel.mol);
                atom_sel = make_asc(atom_sel.mol);
                have_unsaved_changes_flag = 1;
                make_bonds_type_checked(__FUNCTION__);
@@ -7548,9 +7563,7 @@ molecule_class_info_t::add_typed_pointer_atom(coot::Cartesian pos, const std::st
 
          // Not water
          std::string element = "";
-
          if (mol_chain_id.first || pre_existing_chain_flag) {
-
             if (bits.filled) {
 
                bits.SetAtom(atom_p, res_p);
@@ -7806,7 +7819,7 @@ molecule_class_info_t::save_coordinates(const std::string &filename,
       // Now we have updated the molecule name, how shall we restore
       // this from the state file?
       std::vector<std::string> strings;
-      strings.push_back("handle-read-draw-molecule");
+      strings.push_back("coot.handle-read-draw-molecule");
       strings.push_back(single_quote(coot::util::intelligent_debackslash(filename)));
       save_state_command_strings_ = strings;
 
@@ -8159,6 +8172,8 @@ molecule_class_info_t::make_maybe_backup_dir(const std::string &backup_dir) cons
    return coot::util::create_directory(backup_dir);
 }
 
+#include "utils/xdg-base.hh"
+
 // Ignore return value.
 //
 // If successful, increase history_index and if not in a backup
@@ -8169,7 +8184,9 @@ molecule_class_info_t::make_backup() { // changes history details
 
    graphics_info_t g;
    if (backup_this_molecule) {
-      std::string backup_dir("coot-backup");
+      xdg_t xdg;
+      std::string coot_backup_dir = xdg.get_cache_home().append("coot-backup").string();
+      std::string backup_dir(coot_backup_dir);
 
       //shall we use the environment variable instead?
       char *env_var = getenv("COOT_BACKUP_DIR");
@@ -10109,6 +10126,7 @@ molecule_class_info_t::get_contour_level_by_sigma() const {
 
 void
 molecule_class_info_t::set_contour_level(float f) {
+
    if (has_xmap()  || has_nxmap()) {
       contour_level = f;
       update_map(true);
@@ -10694,6 +10712,30 @@ molecule_class_info_t::update_self_from_file(const std::string &pdb_file_name) {
 void
 molecule_class_info_t::update_self(const coot::mtz_to_map_info_t &mmi) {
 
+   // 20240702-PE make this part of mmi?
+   float n_sd = 12.0f; // number of suggested standard deviations for the contour level of a newly-created map
+
+   bool previous_map_was_sane = true;
+   if (xmap.is_null()) previous_map_was_sane = false;
+
+   std::cout << "############### --- start --- update_self() xmap is sane: " << previous_map_was_sane << std::endl;
+
+   float sr = graphics_info_t::map_sampling_rate;
+   std::string cwd = coot::util::current_working_dir(); // why is this needed?
+   map_fill_from_mtz(mmi.mtz_file_name, cwd, mmi.f_col, mmi.phi_col, mmi.w_col, mmi.use_weights, mmi.is_difference_map, sr, true);
+
+   bool ipz = true; // ignore_pseudo zeros
+   mean_and_variance<float> mv = map_density_distribution(xmap, 20, false, ipz);
+
+   if (! previous_map_was_sane) {
+      contour_level = mv.mean + n_sd * std::sqrt(mv.variance);
+      std::cout << "-------- new map contour level " << contour_level << std::endl;
+      update_map_in_display_control_widget();
+   } else {
+      std::cout << "--------- using old map contour level " << contour_level << std::endl;
+   }
+   update_map_internal();
+
 }
 
 #include "coot-utils/diff-diff-map-peaks.hh"
@@ -10875,8 +10917,7 @@ void
 molecule_class_info_t::add_ribbon_representation_with_user_defined_residue_colours(const std::vector<coot::colour_holder> &user_defined_colours,
                                                                                    const std::string &mesh_name) {
 
-#ifdef USE_MOLECULES_TO_TRIANGLES
-
+   int secondary_structure_usage_flag = CALC_SECONDARY_STRUCTURE;
    molecular_mesh_generator_t mmg;
    Material material;
 
@@ -10894,7 +10935,10 @@ molecule_class_info_t::add_ribbon_representation_with_user_defined_residue_colou
          if (n_res > 1) {
             // the indexing into the user_defined_colours vector is in the UDD data of the residue
             std::pair<std::vector<s_generic_vertex>, std::vector<g_triangle> > verts_and_tris =
-               mmg.get_molecular_triangles_mesh_for_ribbon_with_user_defined_residue_colours(atom_sel.mol, chain_p, user_defined_colours);
+               mmg.get_molecular_triangles_mesh_for_ribbon_with_user_defined_residue_colours(atom_sel.mol, chain_p,
+                                                                                             user_defined_colours,
+                                                                                             secondary_structure_usage_flag,
+                                                                                             M2T_float_params, M2T_int_params);
             Mesh mesh(verts_and_tris);
             mesh.set_name(mesh_name);
             meshes.push_back(mesh);
@@ -10902,6 +10946,5 @@ molecule_class_info_t::add_ribbon_representation_with_user_defined_residue_colou
          }
       }
    }
-#endif
 
 }

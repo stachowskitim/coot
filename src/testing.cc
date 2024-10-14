@@ -2578,7 +2578,7 @@ int test_flev_aromatics() {
 	 coot::residues_near_residue(res_ref, atom_sel.mol, residues_near_radius);
       std::pair<bool, coot::dictionary_residue_restraints_t> p =
 	 t.geom.get_monomer_restraints("5GP", 0);
-      coot::pi_stacking_container_t pi_stack_info(p.second, residues, res_ref);
+      pli::pi_stacking_container_t pi_stack_info(p.second, residues, res_ref);
 
       if (pi_stack_info.stackings.size() > 0)
 	 status = 1;
@@ -2793,9 +2793,10 @@ int test_mcd_and_thornton_h_bonds() {
       asc.mol->SelectAtoms(SelHnd_all, 0, "*", mmdb::ANY_RES, "*", mmdb::ANY_RES, "*", "*", "*", "*", "*");
       asc.mol->SelectAtoms(SelHnd_lig, 0, "A", 97, "", 97, "", "*", "*", "*", "*");
 
+      int imol = 55;
       coot::h_bonds hb;
       std::vector<coot::h_bond> hbonds =
-	 hb.get_mcdonald_and_thornton(SelHnd_lig, SelHnd_all, asc.mol, t.geom);
+	 hb.get_mcdonald_and_thornton(SelHnd_lig, SelHnd_all, asc.mol, t.geom, imol);
 
       std::cout << "Returned H-bonds:" << std::endl;
       for (unsigned int i=0; i<hbonds.size(); i++) {

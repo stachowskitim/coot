@@ -9,9 +9,11 @@ endif()
 
 # -Wno-unused-command-line-argument 
 
-# Causes linker errors for Emscripten > 3.1.48. https://github.com/emscripten-core/emscripten/issues/20949
-set(CMAKE_CXX_FLAGS "-Wall --embind-emit-tsd lhasa.d.ts -s USE_PTHREADS=1 -pthread -fwasm-exceptions")
-# set(CMAKE_CXX_FLAGS "-Wall -s USE_PTHREADS=1 -pthread -fwasm-exceptions")
+if(MEMORY64 EQUAL "1")
+  set(CMAKE_CXX_FLAGS "-Wall -sMEMORY64=1 --emit-tsd lhasa.d.ts -s USE_PTHREADS=1 -pthread -fwasm-exceptions")
+else()
+  set(CMAKE_CXX_FLAGS "-Wall --emit-tsd lhasa.d.ts -s USE_PTHREADS=1 -pthread -fwasm-exceptions")
+endif()
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 set(CMAKE_CXX_STANDARD 17)
@@ -32,6 +34,10 @@ if("${EMSCRIPTEN_VERSION}" VERSION_GREATER 3.1.26)
   add_link_options(-sDEFAULT_PTHREAD_STACK_SIZE=2MB -sSTACK_SIZE=5MB)
 endif()
 
+if(MEMORY64 EQUAL "1")
+  add_link_options(-sMEMORY64=1)
+endif()
+
 add_link_options(-lembind -fwasm-exceptions)
 
 include(FindPkgConfig)
@@ -46,6 +52,8 @@ add_library(lh STATIC lhasa.hpp lhasa.cpp)
 target_sources(lh PRIVATE
   glog_replacement.hpp
   glog_replacement.cpp
+  ../layla/qed.hpp
+  ../layla/qed.cpp
   ../layla/utils.hpp
   ../layla/utils.cpp
   ../layla/ligand_editor_canvas.hpp
@@ -58,6 +66,8 @@ target_sources(lh PRIVATE
   ../layla/ligand_editor_canvas/tools.cpp
   ../layla/ligand_editor_canvas/render.hpp
   ../layla/ligand_editor_canvas/render.cpp
+  ../utils/base64-encode-decode.hh
+  ../utils/base64-encode-decode.cc
 )
 
 add_executable(lhasa embind.cpp embind.hpp)
@@ -74,7 +84,9 @@ target_link_libraries(lhasa PRIVATE
     RDKitRDGeneral 
     RDKitRDGeometryLib
     RDKitFileParsers 
-    RDKitSubstructMatch 
+    RDKitDescriptors
+    RDKitChemTransforms
+    RDKitSubstructMatch
     RDKitGenericGroups
     RDKitDataStructs
     boost_iostreams 
