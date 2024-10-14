@@ -47,7 +47,6 @@ class Coot < Formula
   depends_on "gettext"
   depends_on "glib"
   depends_on "gmp"
-  depends_on "glm"
   depends_on "graphene"
   depends_on "glfw"
   depends_on "gsl"
