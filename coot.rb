@@ -40,14 +40,22 @@ class Coot < Formula
   depends_on "brewsci/bio/mmdb2"
   depends_on "brewsci/bio/raster3d"
   depends_on "brewsci/bio/ssm"
+  depends_on "cairo"
   depends_on "dwarfutils"
-  depends_on "glfw"
+  depends_on "freetype"
+  depends_on "gdk-pixpuf"
+  depends_on "gettext"
   depends_on "glib"
   depends_on "gmp"
+  depends_on "graphene"
+  depends_on "glfw"
   depends_on "gsl"
   depends_on "gtk4"
+  depends_on "harfbuzz"
   depends_on "libepoxy"
+  depends_on "libpng"
   depends_on "numpy"
+  depends_on "openblas"
   depends_on "py3cairo"
   depends_on "pygobject3"
   depends_on "python@3.12"
@@ -56,6 +64,11 @@ class Coot < Formula
 
   uses_from_macos "bzip2"
   uses_from_macos "curl"
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "elfutils"
+  end
 
   resource "certifi" do
     url "https://files.pythonhosted.org/packages/98/98/c2ff18671db109c9f10ed27f5ef610ae05b73bd876664139cf95bd1429aa/certifi-2023.7.22.tar.gz"
