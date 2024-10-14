@@ -23,6 +23,7 @@
 
 import os
 
+
 def main(ARGS):
 
     from src.flexrpkg import top_level
@@ -37,10 +38,10 @@ def main(ARGS):
 
     FS = False
 
-    if ARGS.mode == "DELTA":
-        from src.delta import ringer_delta
-        from src.delta.ringer_delta import deltamain
-        deltamain(ARGS.colors,ARGS.reload,ARGS.chi,ARGS.safety,ARGS.pearson,ARGS.render)
+    if ARGS.mode == "MSA":
+        from src.MSA import ringer_MSA
+        from src.MSA.ringer_MSA import MSAmain
+        MSAmain(ARGS.colors,ARGS.reload,ARGS.chi,ARGS.safety,ARGS.pearson,ARGS.render,ARGS.step)
 
     if ARGS.mode == "FLEXRSCORE":
         from src.em import flexrscore

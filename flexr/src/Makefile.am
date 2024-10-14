@@ -1,1 +1,1 @@
-SUBDIRS = building flexrpkg tools
+SUBDIRS = building flexrpkg tools MSA

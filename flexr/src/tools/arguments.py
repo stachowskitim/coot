@@ -11,7 +11,7 @@ def create_parser():
         nargs="?",
         type=str,
         default='FLEXR',
-        help='Mode: FLEXR, DELTA, or FLEXRSCORE. Default: FLEXR'
+        help='Mode: FLEXR, MSA, or FLEXRSCORE. Default: FLEXR'
     )
 
     CLI.add_argument(
