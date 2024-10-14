@@ -43,7 +43,7 @@ class Coot < Formula
   depends_on "cairo"
   depends_on "dwarfutils"
   depends_on "freetype"
-  depends_on "gdk-pixpuf"
+  depends_on "gdk-pixbuf"
   depends_on "gettext"
   depends_on "glib"
   depends_on "gmp"
