@@ -534,6 +534,7 @@ flexr/src/Makefile
 flexr/src/building/Makefile
 flexr/src/flexrpkg/Makefile
 flexr/src/tools/Makefile
+flexr/src/MSA/Makefile
 flexr/library/Makefile
 ])
 AC_OUTPUT
